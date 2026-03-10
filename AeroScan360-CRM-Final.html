@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AeroScan360 — CRM Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0c0f; --bg2:#111318; --bg3:#181c23; --bg4:#1e232d;
+  --border:#2a2f3a; --border2:#353d4a;
+  --text:#e8eaf0; --text2:#8b93a5; --text3:#555f70;
+  --accent:#00d4ff; --accent2:#0099cc;
+  --green:#00e676; --yellow:#ffb300; --red:#ff4444;
+  --orange:#ff6b00; --purple:#b57bee; --pink:#ff6b9d;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+/* SIDEBAR */
+#sidebar{position:fixed;left:0;top:0;width:220px;height:100vh;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100;}
+.logo-area{padding:18px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;min-height:62px;}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;box-shadow:0 0 12px rgba(0,212,255,.3);}
+.logo-text{font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.5px;}
+.logo-sub{font-size:10px;color:var(--text3);}
+.nav-section{padding:8px 0;flex:1;overflow-y:auto;}
+.nav-label{font-size:10px;color:var(--text3);padding:8px 16px 4px;letter-spacing:1px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;transition:all .2s;color:var(--text2);font-size:13px;font-weight:500;border-left:3px solid transparent;}
+.nav-item:hover{background:var(--bg3);color:var(--text);}
+.nav-item.active{background:rgba(0,212,255,.08);color:var(--accent);border-left-color:var(--accent);}
+.nav-item .icon{font-size:15px;width:20px;text-align:center;flex-shrink:0;}
+.nav-badge{background:var(--red);color:#fff;font-size:10px;border-radius:10px;padding:1px 6px;margin-left:auto;flex-shrink:0;}
+.nav-badge.yellow{background:var(--yellow);color:#000;}
+.sidebar-bottom{padding:12px;border-top:1px solid var(--border);}
+.user-card{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;background:var(--bg3);}
+.user-av{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;}
+.user-name{font-size:12px;font-weight:600;}
+.user-role{font-size:10px;color:var(--text3);}
+
+/* MAIN */
+#main{margin-left:220px;min-height:100vh;}
+
+/* TOPBAR */
+#topbar{position:sticky;top:0;z-index:50;background:rgba(10,12,15,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:0 24px;height:56px;}
+.page-title{font-size:16px;font-weight:700;flex:1;}
+.btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .2s;font-family:inherit;}
+.btn-primary{background:var(--accent);color:#000;}
+.btn-primary:hover{background:var(--accent2);box-shadow:0 0 12px rgba(0,212,255,.3);}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border);}
+.btn-ghost:hover{background:var(--bg3);color:var(--text);}
+.sync-pill{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);padding:4px 10px;border-radius:6px;background:var(--bg3);}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--green);}
+.sync-dot.pending{background:var(--yellow);animation:pulse 1s infinite;}
+.sync-dot.error{background:var(--red);}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+/* PAGES */
+.page{display:none;padding:24px;}
+.page.active{display:block;}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin-bottom:24px;}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+.stat-card:hover{border-color:var(--border2);transform:translateY(-1px);}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.stat-card.blue::before{background:var(--accent);}
+.stat-card.green::before{background:var(--green);}
+.stat-card.yellow::before{background:var(--yellow);}
+.stat-card.red::before{background:var(--red);}
+.stat-card.purple::before{background:var(--purple);}
+.stat-label{font-size:11px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;}
+.stat-val{font-size:28px;font-weight:700;line-height:1;font-family:'JetBrains Mono',monospace;}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:4px;}
+.stat-icon{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:28px;opacity:.12;}
+
+/* FILTERS */
+.filters-bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;align-items:center;}
+.search-box{position:relative;flex:1;min-width:200px;max-width:320px;}
+.search-box input{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 12px 8px 34px;font-size:12px;color:var(--text);font-family:inherit;outline:none;transition:border-color .2s;}
+.search-box input:focus{border-color:var(--accent);}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;}
+select.filter{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12px;color:var(--text2);font-family:inherit;cursor:pointer;outline:none;}
+select.filter:focus{border-color:var(--accent);}
+
+/* TABLE */
+.table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.table-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);}
+.table-info{font-size:12px;color:var(--text3);}
+table{width:100%;border-collapse:collapse;}
+th{background:var(--bg3);padding:9px 12px;text-align:left;font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;}
+td{padding:9px 12px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,.02);cursor:pointer;}
+.empresa-name{font-weight:600;color:var(--text);font-size:12px;}
+.empresa-alias{font-size:10px;color:var(--accent);font-family:'JetBrains Mono',monospace;}
+
+/* SECTOR BADGE */
+.sector-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:5px;font-size:10px;font-weight:600;}
+.sec-solar{background:rgba(255,179,0,.15);color:#ffb300;}
+.sec-eolico{background:rgba(0,230,118,.15);color:#00e676;}
+.sec-hidro{background:rgba(79,195,247,.15);color:#4fc3f7;}
+.sec-termico{background:rgba(255,107,0,.15);color:#ff6b00;}
+.sec-multi{background:rgba(181,123,238,.15);color:#b57bee;}
+.sec-otro{background:rgba(139,147,165,.15);color:#8b93a5;}
+
+/* ESTADO SELECT — igual al Colaborativo */
+.vs{display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid;cursor:pointer;font-family:inherit;outline:none;width:100%;min-width:130px;}
+.vs-pendiente{background:rgba(245,158,11,.13);color:#f59e0b;border-color:rgba(245,158,11,.4);}
+.vs-prioritario{background:rgba(239,68,68,.13);color:#f87171;border-color:rgba(239,68,68,.4);}
+.vs-programado{background:rgba(168,85,247,.13);color:#c084fc;border-color:rgba(168,85,247,.4);}
+.vs-contactado{background:rgba(59,130,246,.13);color:#60a5fa;border-color:rgba(59,130,246,.4);}
+.vs-propuesta{background:rgba(251,191,36,.13);color:#fbbf24;border-color:rgba(251,191,36,.4);}
+.vs-visitado{background:rgba(34,197,94,.13);color:#22c55e;border-color:rgba(34,197,94,.4);}
+.vs-negociando{background:rgba(249,115,22,.13);color:#fb923c;border-color:rgba(249,115,22,.4);}
+.vs-ganado{background:rgba(34,197,94,.2);color:#22c55e;border-color:rgba(34,197,94,.5);}
+.vs-perdido{background:rgba(239,68,68,.1);color:#f87171;border-color:rgba(239,68,68,.3);}
+.vs-nodeseado{background:rgba(100,116,139,.13);color:#94a3b8;border-color:rgba(100,116,139,.35);}
+
+/* PRIORIDAD */
+.stars{color:#f59e0b;font-size:11px;white-space:nowrap;}
+
+/* PANEL */
+#detail-panel{position:fixed;right:0;top:0;width:480px;height:100vh;background:var(--bg2);border-left:1px solid var(--border);z-index:200;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden;}
+#detail-panel.open{transform:translateX(0);}
+.panel-header{padding:18px 18px 14px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0;}
+.panel-empresa{font-size:15px;font-weight:700;margin-bottom:2px;}
+.panel-alias{font-size:11px;color:var(--accent);font-family:'JetBrains Mono',monospace;}
+.panel-close{background:var(--bg3);border:none;color:var(--text2);width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.panel-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;}
+.ptab{flex:1;min-width:60px;padding:9px 4px;text-align:center;font-size:11px;font-weight:600;cursor:pointer;color:var(--text3);border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;}
+.ptab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.panel-body{flex:1;overflow-y:auto;padding:16px;}
+.ptab-content{display:none;}
+.ptab-content.active{display:block;}
+.field-group{margin-bottom:14px;}
+.field-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+.field-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:7px 10px;font-size:12px;color:var(--text);font-family:inherit;outline:none;transition:border-color .2s;}
+.field-input:focus{border-color:var(--accent);}
+textarea.field-input{resize:vertical;min-height:72px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.psel{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:12px;outline:none;cursor:pointer;}
+.divider{height:1px;background:var(--border);margin:14px 0;}
+.save-btn{width:100%;padding:10px;background:var(--accent);color:#000;border:none;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;margin-top:10px;transition:all .2s;}
+.save-btn:hover{background:var(--accent2);}
+
+/* HISTORIAL */
+.hist-item{padding:10px;background:var(--bg3);border-radius:8px;margin-bottom:8px;border-left:3px solid var(--border2);}
+.hist-item.llamada{border-left-color:var(--accent);}
+.hist-item.visita{border-left-color:var(--green);}
+.hist-item.propuesta{border-left-color:var(--yellow);}
+.hist-item.reunion{border-left-color:var(--purple);}
+.hist-item.seguimiento{border-left-color:var(--orange);}
+.hist-item.nota{border-left-color:var(--text3);}
+.hist-type{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;}
+.hist-text{font-size:12px;color:var(--text2);}
+.hist-date{font-size:10px;color:var(--text3);margin-top:4px;font-family:'JetBrains Mono',monospace;}
+
+/* TAREAS */
+.tarea-item{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;margin-bottom:6px;background:var(--bg3);cursor:pointer;}
+.tarea-check{width:17px;height:17px;border-radius:4px;border:2px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;}
+.tarea-check.done{background:var(--green);border-color:var(--green);color:#000;}
+.tarea-text{flex:1;font-size:12px;}
+.tarea-text.done{text-decoration:line-through;color:var(--text3);}
+.tarea-date{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;}
+
+/* TAG SELECTOR */
+.tag-selector{display:flex;flex-wrap:wrap;gap:5px;}
+.tag-opt{padding:3px 9px;border-radius:20px;font-size:11px;cursor:pointer;border:1px solid var(--border);color:var(--text2);transition:all .2s;background:var(--bg3);}
+.tag-opt.selected{background:rgba(0,212,255,.15);color:var(--accent);border-color:var(--accent);}
+
+/* KANBAN */
+.kanban{display:flex;gap:12px;overflow-x:auto;padding-bottom:12px;}
+.kanban-col{min-width:210px;flex-shrink:0;}
+.kanban-col-header{padding:9px 12px;border-radius:8px 8px 0 0;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:space-between;}
+.kanban-col-body{background:var(--bg2);border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;min-height:280px;padding:8px;display:flex;flex-direction:column;gap:6px;}
+.kcard{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;cursor:pointer;transition:all .2s;}
+.kcard:hover{border-color:var(--border2);transform:translateY(-1px);}
+.kc-empresa{font-size:12px;font-weight:600;margin-bottom:3px;}
+.kc-sector{font-size:10px;color:var(--text3);}
+.kc-valor{font-size:12px;color:var(--green);font-family:'JetBrains Mono',monospace;margin-top:5px;font-weight:600;}
+
+/* CALENDAR */
+.cal-grid{display:grid;grid-template-columns:1fr 300px;gap:20px;}
+.cal-main{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.cal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);}
+.cal-title{font-size:15px;font-weight:700;}
+.cal-nav-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:5px 10px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:13px;transition:all .2s;}
+.cal-nav-btn:hover{background:var(--bg4);color:var(--text);}
+.cal-days-header{display:grid;grid-template-columns:repeat(7,1fr);}
+.cal-day-name{padding:7px;text-align:center;font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;}
+.cal-days{display:grid;grid-template-columns:repeat(7,1fr);}
+.cal-day{min-height:78px;padding:6px;border-top:1px solid var(--border);border-right:1px solid var(--border);cursor:pointer;transition:background .15s;}
+.cal-day:hover{background:var(--bg3);}
+.cal-day.today{background:rgba(0,212,255,.05);}
+.cal-day.other-month{opacity:.3;}
+.cal-day-num{font-size:12px;font-weight:600;margin-bottom:3px;}
+.cal-day.today .cal-day-num{color:var(--accent);}
+.cal-event{font-size:10px;padding:2px 4px;border-radius:3px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cal-event.visita{background:rgba(0,230,118,.2);color:var(--green);}
+.cal-event.llamada{background:rgba(0,212,255,.2);color:var(--accent);}
+.cal-event.propuesta{background:rgba(255,179,0,.2);color:var(--yellow);}
+.cal-event.reunion{background:rgba(181,123,238,.2);color:var(--purple);}
+.cal-sidebar{display:flex;flex-direction:column;gap:14px;}
+.cal-side-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;}
+.cal-side-title{font-size:13px;font-weight:700;margin-bottom:10px;}
+.upcoming-item{display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);}
+.upcoming-item:last-child{border-bottom:none;}
+.up-date{font-size:10px;color:var(--accent);font-family:'JetBrains Mono',monospace;background:rgba(0,212,255,.1);padding:2px 5px;border-radius:4px;white-space:nowrap;height:fit-content;}
+.up-empresa{font-size:12px;font-weight:600;}
+.up-tipo{font-size:11px;color:var(--text3);}
+
+/* REPORTES */
+.report-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-bottom:20px;}
+.report-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;}
+.report-title{font-size:12px;font-weight:700;margin-bottom:14px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;}
+.bar-chart{display:flex;flex-direction:column;gap:8px;}
+.bar-item{display:flex;align-items:center;gap:8px;}
+.bar-label{font-size:10px;color:var(--text2);width:85px;flex-shrink:0;text-align:right;}
+.bar-track{flex:1;height:18px;background:var(--bg3);border-radius:3px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:3px;display:flex;align-items:center;justify-content:flex-end;padding-right:5px;font-size:10px;font-weight:700;color:#000;transition:width .8s cubic-bezier(.4,0,.2,1);}
+.bar-num{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;width:24px;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:300;display:none;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;width:580px;max-width:95vw;max-height:90vh;overflow-y:auto;}
+.modal-header{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.modal-title{font-size:15px;font-weight:700;}
+.modal-close{background:var(--bg3);border:none;color:var(--text2);width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:17px;}
+.modal-body{padding:22px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-full{grid-column:1/-1;}
+.form-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;display:block;}
+.modal-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
+
+/* TOAST */
+#toast{position:fixed;bottom:24px;right:24px;z-index:999;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:11px 15px;font-size:13px;display:flex;align-items:center;gap:8px;transform:translateY(80px);opacity:0;transition:all .3s;box-shadow:0 8px 32px rgba(0,0,0,.4);}
+#toast.show{transform:translateY(0);opacity:1;}
+#toast.success{border-left:3px solid var(--green);}
+#toast.error{border-left:3px solid var(--red);}
+#toast.info{border-left:3px solid var(--accent);}
+
+/* SYNC BANNER */
+#sync-banner{background:rgba(0,212,255,.08);border-bottom:1px solid rgba(0,212,255,.2);padding:6px 24px;font-size:11px;display:flex;align-items:center;gap:8px;color:var(--text2);}
+#sync-banner .sb-time{margin-left:auto;color:var(--text3);font-family:'JetBrains Mono',monospace;}
+
+.empty-state{text-align:center;padding:40px 20px;color:var(--text3);}
+.empty-state .ei{font-size:40px;margin-bottom:10px;opacity:.25;}
+.add-hist-box{background:var(--bg3);border-radius:8px;padding:12px;margin-top:10px;}
+.prob-bar{height:4px;background:var(--bg4);border-radius:2px;margin-top:4px;}
+.prob-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--accent),var(--green));transition:width .5s;}
+.oport-val{font-size:22px;font-weight:700;color:var(--green);font-family:'JetBrains Mono',monospace;}
+@media(max-width:768px){#sidebar{width:60px;} #main{margin-left:60px;} .cal-grid{grid-template-columns:1fr;} #detail-panel{width:100%;} .form-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <div class="logo-area">
+    <div class="logo-icon">🚁</div>
+    <div><div class="logo-text">AeroScan360</div><div class="logo-sub">CRM Profesional</div></div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Principal</div>
+    <div class="nav-item active" onclick="showPage('dashboard',this)"><span class="icon">📊</span><span>Dashboard</span></div>
+    <div class="nav-item" onclick="showPage('prospectos',this)"><span class="icon">🏢</span><span>Prospectos</span><span class="nav-badge" id="badge-total">35</span></div>
+    <div class="nav-item" onclick="showPage('pipeline',this)"><span class="icon">📋</span><span>Pipeline</span></div>
+    <div class="nav-item" onclick="showPage('calendario',this)"><span class="icon">📅</span><span>Calendario</span><span class="nav-badge yellow" id="badge-cal">0</span></div>
+    <div class="nav-label">Gestión</div>
+    <div class="nav-item" onclick="showPage('actividades',this)"><span class="icon">⚡</span><span>Actividades</span></div>
+    <div class="nav-item" onclick="showPage('reportes',this)"><span class="icon">📈</span><span>Reportes</span></div>
+    <div class="nav-label">Servicios</div>
+    <div class="nav-item" onclick="filterServicio('redes',this)"><span class="icon">⚡</span><span>Redes Eléctricas</span></div>
+    <div class="nav-item" onclick="filterServicio('solar',this)"><span class="icon">☀️</span><span>Plantas Solares</span></div>
+    <div class="nav-item" onclick="filterServicio('eolico',this)"><span class="icon">💨</span><span>Parques Eólicos</span></div>
+    <div class="nav-item" onclick="filterServicio('fotogrametria',this)"><span class="icon">🗺️</span><span>Fotogrametría</span></div>
+    <div class="nav-item" onclick="filterServicio('civil',this)"><span class="icon">🏗️</span><span>Obras Civiles</span></div>
+  </div>
+  <div class="sidebar-bottom">
+    <div class="user-card"><div class="user-av">AS</div><div><div class="user-name">AeroScan360</div><div class="user-role">Administrador</div></div></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <!-- SYNC BANNER -->
+  <div id="sync-banner">
+    <div class="sync-dot" id="sdot"></div>
+    <span id="sync-msg">Conectando con Google Sheets...</span>
+    <button class="btn btn-ghost" onclick="syncNow()" style="font-size:10px;padding:3px 8px;margin-left:6px;">🔄 Sincronizar</button>
+    <a href="https://docs.google.com/spreadsheets/d/1pxeEkWeNAB7ZsOgQg1z8Ni4L_PEIs_lyd1M96MRTdGA/edit" target="_blank" style="color:var(--accent);font-size:10px;text-decoration:none;margin-left:6px;">📊 Abrir Sheets ↗</a>
+    <span class="sb-time" id="sync-time"></span>
+  </div>
+
+  <!-- TOPBAR -->
+  <div id="topbar">
+    <div class="page-title" id="page-title">Dashboard</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="sync-pill"><div class="sync-dot" id="tdot"></div><span id="tsync">Sincronizado</span></div>
+      <button class="btn btn-ghost" onclick="exportCSV()">⬇ CSV</button>
+      <button class="btn btn-primary" onclick="openModal()">+ Nuevo Prospecto</button>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="page-dashboard" class="page active">
+    <div class="stats-grid" id="stats-grid"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:22px;">
+      <div class="report-card"><div class="report-title">📊 Estado de Prospectos</div><div id="dash-estados"></div></div>
+      <div class="report-card"><div class="report-title">⚡ Por Sector</div><div id="dash-sectores"></div></div>
+    </div>
+    <div class="report-card"><div class="report-title">📅 Próximas Actividades</div><div id="dash-upcoming"></div></div>
+  </div>
+
+  <!-- PROSPECTOS -->
+  <div id="page-prospectos" class="page">
+    <div class="filters-bar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search" placeholder="Buscar empresa, contacto, ciudad..." oninput="renderTable()">
+      </div>
+      <select class="filter" id="f-sector" onchange="renderTable()">
+        <option value="">Todos los sectores</option>
+        <option value="solar">☀️ Solar</option><option value="eolico">💨 Eólico</option>
+        <option value="hidro">💧 Hidroeléctrico</option><option value="termico">🔥 Térmico</option>
+        <option value="multi">⚡ Multi-sector</option>
+      </select>
+      <select class="filter" id="f-estado" onchange="renderTable()">
+        <option value="">Todos los estados</option>
+        <option value="pendiente">⏳ Pendiente</option><option value="prioritario">🔴 Prioritario</option>
+        <option value="programado">📅 Programado</option><option value="contactado">📞 Contactado</option>
+        <option value="propuesta">📄 Propuesta</option><option value="visitado">✅ Visitado</option>
+        <option value="negociando">🤝 Negociando</option><option value="ganado">🏆 Ganado</option>
+        <option value="perdido">❌ Perdido</option><option value="nodeseado">🚫 No deseado</option>
+      </select>
+      <select class="filter" id="f-depto" onchange="renderTable()"><option value="">Todos los departamentos</option></select>
+      <select class="filter" id="f-prio" onchange="renderTable()">
+        <option value="">Toda prioridad</option>
+        <option value="3">⭐⭐⭐ Alta</option><option value="2">⭐⭐ Media</option><option value="1">⭐ Baja</option>
+      </select>
+      <select class="filter" id="f-servicio" onchange="renderTable()">
+        <option value="">Todos los servicios</option>
+        <option value="redes">⚡ Redes Eléctricas</option><option value="solar">☀️ Plantas Solares</option>
+        <option value="eolico">💨 Parques Eólicos</option><option value="fotogrametria">🗺️ Fotogrametría</option>
+        <option value="civil">🏗️ Obras Civiles</option><option value="agricola">🌾 Agrícola</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+      <div class="table-header">
+        <span class="table-info" id="table-info">Cargando...</span>
+        <button class="btn btn-ghost" onclick="syncNow()" style="font-size:11px;padding:5px 10px;">↺ Sync</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table id="main-table">
+          <thead><tr>
+            <th>#</th><th>Empresa</th><th>Sector</th><th>Contacto / Tel.</th>
+            <th>Ubicación</th><th>Prioridad</th><th>Estado</th><th>Próx. Visita</th>
+          </tr></thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIPELINE -->
+  <div id="page-pipeline" class="page">
+    <div style="margin-bottom:14px;display:flex;gap:10px;align-items:center;">
+      <span style="font-size:12px;color:var(--text2)">Pipeline de ventas — arrastra mentalmente o haz clic para editar</span>
+      <span id="pipeline-total" style="font-size:12px;color:var(--green);font-family:'JetBrains Mono',monospace;"></span>
+    </div>
+    <div class="kanban" id="kanban"></div>
+  </div>
+
+  <!-- CALENDARIO -->
+  <div id="page-calendario" class="page">
+    <div class="cal-grid">
+      <div class="cal-main">
+        <div class="cal-header">
+          <div style="display:flex;gap:6px;">
+            <button class="cal-nav-btn" onclick="changeMonth(-1)">‹</button>
+            <button class="cal-nav-btn" onclick="changeMonth(1)">›</button>
+          </div>
+          <div class="cal-title" id="cal-title"></div>
+          <button class="btn btn-primary" onclick="focusQuickEvent()" style="font-size:11px;padding:5px 12px;">+ Evento</button>
+        </div>
+        <div class="cal-days-header">
+          <div class="cal-day-name">Dom</div><div class="cal-day-name">Lun</div><div class="cal-day-name">Mar</div>
+          <div class="cal-day-name">Mié</div><div class="cal-day-name">Jue</div><div class="cal-day-name">Vie</div>
+          <div class="cal-day-name">Sáb</div>
+        </div>
+        <div class="cal-days" id="cal-days"></div>
+      </div>
+      <div class="cal-sidebar">
+        <div class="cal-side-card">
+          <div class="cal-side-title">📅 Próximos Eventos</div>
+          <div id="cal-upcoming"></div>
+        </div>
+        <div class="cal-side-card">
+          <div class="cal-side-title">➕ Agregar Evento</div>
+          <div class="field-group">
+            <div class="field-label">Empresa</div>
+            <select class="field-input" id="qe-empresa"></select>
+          </div>
+          <div class="field-group">
+            <div class="field-label">Tipo</div>
+            <select class="field-input" id="qe-tipo">
+              <option value="visita">🚁 Visita / Inspección</option>
+              <option value="llamada">📞 Llamada</option>
+              <option value="propuesta">📄 Entrega Propuesta</option>
+              <option value="reunion">🤝 Reunión</option>
+              <option value="seguimiento">📧 Seguimiento</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <div class="field-label">Fecha</div>
+            <input type="date" class="field-input" id="qe-fecha">
+          </div>
+          <div class="field-group">
+            <div class="field-label">Nota</div>
+            <textarea class="field-input" id="qe-nota" rows="2" placeholder="Descripción..."></textarea>
+          </div>
+          <button class="save-btn" onclick="addQuickEvent()">+ Agregar Evento</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTIVIDADES -->
+  <div id="page-actividades" class="page">
+    <div class="filters-bar">
+      <select class="filter" id="fa-tipo" onchange="renderActividades()">
+        <option value="">Todos los tipos</option>
+        <option value="llamada">📞 Llamadas</option><option value="visita">🚁 Visitas</option>
+        <option value="propuesta">📄 Propuestas</option><option value="reunion">🤝 Reuniones</option>
+        <option value="nota">📝 Notas</option>
+      </select>
+      <select class="filter" id="fa-empresa" onchange="renderActividades()">
+        <option value="">Todas las empresas</option>
+      </select>
+    </div>
+    <div id="actividades-list"></div>
+  </div>
+
+  <!-- REPORTES -->
+  <div id="page-reportes" class="page">
+    <div class="report-grid">
+      <div class="report-card"><div class="report-title">📊 Por Estado</div><div id="rep-estados"></div></div>
+      <div class="report-card"><div class="report-title">⚡ Por Sector</div><div id="rep-sectores"></div></div>
+      <div class="report-card"><div class="report-title">🚁 Servicios Interés</div><div id="rep-servicios"></div></div>
+      <div class="report-card"><div class="report-title">📍 Por Departamento</div><div id="rep-deptos"></div></div>
+    </div>
+    <div class="report-card">
+      <div class="report-title">⚡ Actividad Reciente</div>
+      <div id="rep-actividad"></div>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL PANEL -->
+<div id="detail-panel">
+  <div class="panel-header">
+    <div>
+      <div class="panel-empresa" id="p-name">—</div>
+      <div class="panel-alias" id="p-alias"></div>
+    </div>
+    <button class="panel-close" onclick="closePanel()">✕</button>
+  </div>
+  <div class="panel-tabs">
+    <div class="ptab active" onclick="switchTab('info',this)">ℹ️ Info</div>
+    <div class="ptab" onclick="switchTab('contacto',this)">👤 Contacto</div>
+    <div class="ptab" onclick="switchTab('oportunidad',this)">💰 Oportunidad</div>
+    <div class="ptab" onclick="switchTab('historial',this)">📋 Historial</div>
+    <div class="ptab" onclick="switchTab('tareas',this)">✅ Tareas</div>
+  </div>
+  <div class="panel-body">
+    <!-- INFO -->
+    <div id="tab-info" class="ptab-content active">
+      <div class="field-group">
+        <div class="field-label">Estado</div>
+        <select class="vs" id="p-estado" onchange="setPanelEstado(this.value,this)">
+          <option value="pendiente">⏳ Pendiente</option>
+          <option value="prioritario">🔴 Prioritario</option>
+          <option value="programado">📅 Programado</option>
+          <option value="contactado">📞 Contactado</option>
+          <option value="propuesta">📄 Propuesta Enviada</option>
+          <option value="visitado">✅ Visitado</option>
+          <option value="negociando">🤝 Negociando</option>
+          <option value="ganado">🏆 Ganado</option>
+          <option value="perdido">❌ Perdido</option>
+          <option value="nodeseado">🚫 No Deseado</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <div class="field-label">Prioridad</div>
+        <div style="display:flex;gap:6px;" id="prio-btns">
+          <button onclick="setPrioridad(1)" id="prio-1" class="btn btn-ghost" style="font-size:13px;padding:4px 10px;">⭐</button>
+          <button onclick="setPrioridad(2)" id="prio-2" class="btn btn-ghost" style="font-size:13px;padding:4px 10px;">⭐⭐</button>
+          <button onclick="setPrioridad(3)" id="prio-3" class="btn btn-ghost" style="font-size:13px;padding:4px 10px;">⭐⭐⭐</button>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="field-row">
+        <div class="field-group"><div class="field-label">Sector</div><div id="p-sector" style="font-size:13px;">—</div></div>
+        <div class="field-group"><div class="field-label">Capacidad</div><div id="p-capacidad" style="font-size:12px;font-family:'JetBrains Mono',monospace;">—</div></div>
+      </div>
+      <div class="field-group"><div class="field-label">Proyecto</div><div id="p-proyecto" style="font-size:12px;color:var(--text2);">—</div></div>
+      <div class="field-row">
+        <div class="field-group"><div class="field-label">Ciudad</div><div id="p-ciudad" style="font-size:12px;">—</div></div>
+        <div class="field-group"><div class="field-label">Departamento</div><div id="p-depto" style="font-size:12px;">—</div></div>
+      </div>
+      <div class="field-group"><div class="field-label">Dirección</div><div id="p-dir" style="font-size:12px;color:var(--text2);">—</div></div>
+      <div class="field-group">
+        <div class="field-label">Coordenadas GPS</div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div id="p-coords" style="font-size:11px;font-family:'JetBrains Mono',monospace;flex:1;">—</div>
+          <a id="p-maplink" href="#" target="_blank" style="color:var(--accent);font-size:11px;text-decoration:none;">🗺 Mapa</a>
+        </div>
+      </div>
+      <div class="field-group">
+        <div class="field-label">Servicios de Interés</div>
+        <div class="tag-selector" id="p-servicios-tags">
+          <span class="tag-opt" data-v="redes" onclick="toggleServTag(this)">⚡ Redes</span>
+          <span class="tag-opt" data-v="solar" onclick="toggleServTag(this)">☀️ Solar</span>
+          <span class="tag-opt" data-v="eolico" onclick="toggleServTag(this)">💨 Eólico</span>
+          <span class="tag-opt" data-v="fotogrametria" onclick="toggleServTag(this)">🗺️ Fotogrametría</span>
+          <span class="tag-opt" data-v="civil" onclick="toggleServTag(this)">🏗️ Civil</span>
+          <span class="tag-opt" data-v="agricola" onclick="toggleServTag(this)">🌾 Agrícola</span>
+          <span class="tag-opt" data-v="sar" onclick="toggleServTag(this)">🔍 SAR</span>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="field-row">
+        <div class="field-group"><div class="field-label">Próxima Visita</div><input type="date" class="field-input" id="p-fecha-visita" onchange="autoSave()"></div>
+        <div class="field-group"><div class="field-label">Hora</div><input type="time" class="field-input" id="p-hora-visita" onchange="autoSave()"></div>
+      </div>
+      <div class="field-group">
+        <div class="field-label">Canal Preferido</div>
+        <select class="field-input" id="p-canal" onchange="autoSave()">
+          <option value="">—</option><option>Email</option><option>WhatsApp</option>
+          <option>Teléfono</option><option>Visita Directa</option><option>Referido</option><option>LinkedIn</option>
+        </select>
+      </div>
+      <div class="field-group"><div class="field-label">Notas Internas</div><textarea class="field-input" id="p-notas" rows="3" placeholder="Observaciones, contexto..." onchange="autoSave()"></textarea></div>
+      <button class="save-btn" onclick="savePanel()">💾 Guardar Cambios</button>
+    </div>
+
+    <!-- CONTACTO -->
+    <div id="tab-contacto" class="ptab-content">
+      <div class="field-row">
+        <div class="field-group"><div class="field-label">Nombre Contacto</div><input class="field-input" id="p-contacto" placeholder="Nombre completo" onchange="autoSave()"></div>
+        <div class="field-group"><div class="field-label">Cargo</div><input class="field-input" id="p-cargo" placeholder="Director, Gerente..." onchange="autoSave()"></div>
+      </div>
+      <div class="field-row">
+        <div class="field-group"><div class="field-label">Teléfono Principal</div><input class="field-input" id="p-tel" placeholder="+504..." onchange="autoSave()"></div>
+        <div class="field-group"><div class="field-label">WhatsApp</div><input class="field-input" id="p-whatsapp" placeholder="+504..." onchange="autoSave()"></div>
+      </div>
+      <div class="field-row">
+        <div class="field-group"><div class="field-label">Email Principal</div><input class="field-input" id="p-email" type="email" placeholder="correo@empresa.com" onchange="autoSave()"></div>
+        <div class="field-group"><div class="field-label">Email Alternativo</div><input class="field-input" id="p-email2" type="email" placeholder="otro@..." onchange="autoSave()"></div>
+      </div>
+      <div class="divider"></div>
+      <div class="field-row">
+        <div class="field-group"><div class="field-label">Contacto 2</div><input class="field-input" id="p-contacto2" placeholder="Nombre" onchange="autoSave()"></div>
+        <div class="field-group"><div class="field-label">Cargo Contacto 2</div><input class="field-input" id="p-cargo2" placeholder="Cargo..." onchange="autoSave()"></div>
+      </div>
+      <div class="field-row">
+        <div class="field-group"><div class="field-label">Tel. Contacto 2</div><input class="field-input" id="p-tel2" placeholder="+504..." onchange="autoSave()"></div>
+        <div class="field-group"><div class="field-label">Estado del Teléfono</div>
+          <select class="field-input" id="p-tel-estado" onchange="autoSave()">
+            <option value="">—</option><option value="activo">✅ Activo</option>
+            <option value="no-contesta">📵 No contesta</option><option value="ocupado">🔴 Ocupado</option>
+            <option value="incorrecto">❌ Incorrecto</option><option value="wp-only">💬 Solo WhatsApp</option>
+          </select>
+        </div>
+      </div>
+      <button class="save-btn" onclick="savePanel()">💾 Guardar Contacto</button>
+    </div>
+
+    <!-- OPORTUNIDAD -->
+    <div id="tab-oportunidad" class="ptab-content">
+      <div class="field-row">
+        <div class="field-group"><div class="field-label">Valor Estimado (L.)</div><input class="field-input" id="p-valor" placeholder="0.00" type="number" onchange="updateProbBar();autoSave()"></div>
+        <div class="field-group"><div class="field-label">Probabilidad %</div><input class="field-input" id="p-prob" placeholder="0-100" type="number" min="0" max="100" onchange="updateProbBar();autoSave()"></div>
+      </div>
+      <div class="prob-bar"><div class="prob-fill" id="prob-fill" style="width:0%"></div></div>
+      <div class="field-row" style="margin-top:12px;">
+        <div class="field-group"><div class="field-label">Fecha Est. Cierre</div><input type="date" class="field-input" id="p-cierre" onchange="autoSave()"></div>
+        <div class="field-group"><div class="field-label">Fuente del Lead</div>
+          <select class="field-input" id="p-fuente" onchange="autoSave()">
+            <option value="">—</option><option>Prospección directa</option><option>Referido</option>
+            <option>LinkedIn</option><option>Web</option><option>Evento</option><option>Otro</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-group"><div class="field-label">Descripción de la Oportunidad</div><textarea class="field-input" id="p-op-desc" rows="3" placeholder="Describe la oportunidad..." onchange="autoSave()"></textarea></div>
+      <button class="save-btn" onclick="savePanel()">💾 Guardar Oportunidad</button>
+    </div>
+
+    <!-- HISTORIAL -->
+    <div id="tab-historial" class="ptab-content">
+      <div class="add-hist-box">
+        <div class="field-label" style="margin-bottom:7px;">➕ Registrar Actividad</div>
+        <select class="field-input" id="h-tipo" style="margin-bottom:8px;">
+          <option value="llamada">📞 Llamada</option>
+          <option value="visita">🚁 Visita / Inspección</option>
+          <option value="propuesta">📄 Propuesta Enviada</option>
+          <option value="reunion">🤝 Reunión</option>
+          <option value="seguimiento">📧 Seguimiento</option>
+          <option value="nota">📝 Nota</option>
+        </select>
+        <input type="date" class="field-input" id="h-fecha" style="margin-bottom:8px;">
+        <textarea class="field-input" id="h-texto" rows="2" placeholder="Detalle de la actividad..." style="margin-bottom:8px;"></textarea>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="addHistorial()">+ Registrar</button>
+      </div>
+      <div id="historial-list" style="margin-top:12px;"></div>
+    </div>
+
+    <!-- TAREAS -->
+    <div id="tab-tareas" class="ptab-content">
+      <div class="add-hist-box">
+        <div class="field-label" style="margin-bottom:7px;">➕ Nueva Tarea</div>
+        <input class="field-input" id="t-texto" placeholder="Descripción de la tarea..." style="margin-bottom:8px;">
+        <div class="field-row" style="margin-bottom:8px;">
+          <input type="date" class="field-input" id="t-fecha">
+          <select class="field-input" id="t-tipo">
+            <option value="llamada">📞 Llamar</option><option value="visita">🚁 Visitar</option>
+            <option value="email">📧 Email</option><option value="propuesta">📄 Propuesta</option>
+            <option value="otro">📌 Otro</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="addTarea()">+ Agregar</button>
+      </div>
+      <div id="tareas-list" style="margin-top:12px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NUEVO -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">➕ Nuevo Prospecto</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-full"><label class="form-label">Nombre de la Empresa *</label><input class="field-input" id="m-empresa" placeholder="Nombre completo"></div>
+        <div><label class="form-label">Alias / Siglas</label><input class="field-input" id="m-alias" placeholder="FOTERSA, SERSA..."></div>
+        <div><label class="form-label">Sector</label>
+          <select class="field-input" id="m-sector">
+            <option value="solar">☀️ Solar</option><option value="eolico">💨 Eólico</option>
+            <option value="hidro">💧 Hidroeléctrico</option><option value="termico">🔥 Térmico</option>
+            <option value="multi">⚡ Multi-sector</option><option value="otro">🏢 Otro</option>
+          </select>
+        </div>
+        <div><label class="form-label">Proyecto</label><input class="field-input" id="m-proyecto" placeholder="Nombre del proyecto..."></div>
+        <div><label class="form-label">Capacidad / MW</label><input class="field-input" id="m-capacidad" placeholder="Ej: 20 MW"></div>
+        <div><label class="form-label">Ciudad</label><input class="field-input" id="m-ciudad" placeholder="Ciudad..."></div>
+        <div><label class="form-label">Departamento</label>
+          <select class="field-input" id="m-depto">
+            <option>Atlántida</option><option>Choluteca</option><option>Colón</option><option>Comayagua</option>
+            <option>Copán</option><option>Cortés</option><option>El Paraíso</option>
+            <option>Francisco Morazán</option><option>Gracias a Dios</option><option>Intibucá</option>
+            <option>Islas de la Bahía</option><option>La Paz</option><option>Lempira</option>
+            <option>Ocotepeque</option><option>Olancho</option><option>Santa Bárbara</option>
+            <option>Valle</option><option>Yoro</option>
+          </select>
+        </div>
+        <div><label class="form-label">Contacto Principal</label><input class="field-input" id="m-contacto" placeholder="Nombre del contacto"></div>
+        <div><label class="form-label">Teléfono</label><input class="field-input" id="m-tel" placeholder="+504..."></div>
+        <div><label class="form-label">Email</label><input class="field-input" id="m-email" type="email" placeholder="correo@empresa.com"></div>
+        <div><label class="form-label">Estado Inicial</label>
+          <select class="field-input" id="m-estado">
+            <option value="pendiente">⏳ Pendiente</option><option value="prioritario">🔴 Prioritario</option><option value="contactado">📞 Contactado</option>
+          </select>
+        </div>
+        <div><label class="form-label">Prioridad</label>
+          <select class="field-input" id="m-prioridad">
+            <option value="3">⭐⭐⭐ Alta</option><option value="2">⭐⭐ Media</option><option value="1">⭐ Baja</option>
+          </select>
+        </div>
+        <div class="form-full"><label class="form-label">Servicios de Interés</label>
+          <div class="tag-selector" id="m-servicios">
+            <span class="tag-opt" data-v="redes" onclick="this.classList.toggle('selected')">⚡ Redes</span>
+            <span class="tag-opt" data-v="solar" onclick="this.classList.toggle('selected')">☀️ Solar</span>
+            <span class="tag-opt" data-v="eolico" onclick="this.classList.toggle('selected')">💨 Eólico</span>
+            <span class="tag-opt" data-v="fotogrametria" onclick="this.classList.toggle('selected')">🗺️ Fotogrametría</span>
+            <span class="tag-opt" data-v="civil" onclick="this.classList.toggle('selected')">🏗️ Civil</span>
+            <span class="tag-opt" data-v="agricola" onclick="this.classList.toggle('selected')">🌾 Agrícola</span>
+            <span class="tag-opt" data-v="sar" onclick="this.classList.toggle('selected')">🔍 SAR</span>
+          </div>
+        </div>
+        <div class="form-full"><label class="form-label">Notas</label><textarea class="field-input" id="m-notas" rows="2" placeholder="Observaciones..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveNewProspecto()">💾 Guardar Prospecto</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ================================================================
+// CONFIG
+// ================================================================
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxaV8c6pPH6aEuq3bEqBbq9vZwVzy2nAiaJ4PC46sO-VLeepCnSk6f5iLYi0BHp0vbTdw/exec';
+const SYNC_INTERVAL = 30000;
+
+const SECTOR_MAP = {solar:'☀️ Solar',eolico:'💨 Eólico',hidro:'💧 Hidroeléctrico',termico:'🔥 Térmico',multi:'⚡ Multi-sector',otro:'🏢 Otro'};
+const SECTOR_CSS = {solar:'sec-solar',eolico:'sec-eolico',hidro:'sec-hidro',termico:'sec-termico',multi:'sec-multi',otro:'sec-otro'};
+const ESTADO_LABELS = {pendiente:'⏳ Pendiente',prioritario:'🔴 Prioritario',programado:'📅 Programado',contactado:'📞 Contactado',propuesta:'📄 Propuesta',visitado:'✅ Visitado',negociando:'🤝 Negociando',ganado:'🏆 Ganado',perdido:'❌ Perdido',nodeseado:'🚫 No Deseado'};
+const SERV_MAP = {redes:'⚡ Redes Eléctricas',solar:'☀️ Plantas Solares',eolico:'💨 Parques Eólicos',fotogrametria:'🗺️ Fotogrametría',civil:'🏗️ Obras Civiles',agricola:'🌾 Agrícola',sar:'🔍 SAR'};
+
+// ================================================================
+// BASE DATA (35 empresas)
+// ================================================================
+const BASE_DATA = [
+  {id:1,empresa:'FOTERSA – Sistemas Fotovoltaicos de Honduras S.A.',alias:'FOTERSA',sector:'solar',proyecto:'Granja Solar Pacífico 1 – 20 MW',capacidad:'20 MW',emailBase:'fotersacree@dencmi.com',telBase:'2269-1217',prioridad:3,ciudad:'Nacaome',depto:'Valle',direccion:'Valle del Sur',coords:'13.5126,-87.4987'},
+  {id:2,empresa:'SERSA – Soluciones Energéticas Renovables S.A. de C.V.',alias:'SERSA',sector:'solar',proyecto:'Choluteca Solar I y II – 58 MWp',capacidad:'58 MW',emailBase:'sersa1cree@dencmi.com',telBase:'2269-1217',prioridad:3,ciudad:'Choluteca',depto:'Choluteca',direccion:'Carretera Interamericana',coords:'13.2995,-87.1937'},
+  {id:3,empresa:'PRODERSSA – Producción de Energía Solar y Demás Renovables S.A.',alias:'PRODERSSA',sector:'solar',proyecto:'Fotovoltaico Nacaome II – 49.90 MW',capacidad:'49.9 MW',emailBase:'proderssa@scatecsolar.com',telBase:'2280-2516',prioridad:3,ciudad:'Nacaome',depto:'Valle',direccion:'Municipio Nacaome',coords:'13.5253,-87.4941'},
+  {id:4,empresa:'GENERSA – Generación Renovable de Honduras S.A. de C.V.',alias:'GENERSA',sector:'solar',proyecto:'Solar Helios – 11.25 MW',capacidad:'11.25 MW',emailBase:'cree-genersa@terra-energia.com',telBase:'2236-8788',prioridad:3,ciudad:'Tegucigalpa',depto:'Francisco Morazán',direccion:'Santa Lucía',coords:'14.0918,-87.0682'},
+  {id:5,empresa:'Fotovoltaica Sureña S.A.',alias:'LLANOSUR',sector:'solar',proyecto:'Parque Solar Llanos del Sur – 14.8 MW',capacidad:'14.8 MW',emailBase:'fotovoltaicasurena@scatecsolar.com',telBase:'2280-2170',prioridad:3,ciudad:'Choluteca',depto:'Choluteca',direccion:'Llanos del Sur',coords:'13.3500,-87.2000'},
+  {id:6,empresa:'Generaciones Energéticas S.A.',alias:'GENENERSA',sector:'solar',proyecto:'Parque Solar 11.25 MW',capacidad:'11.25 MW',emailBase:'generacionesenergeticas@scatecsolar.com',telBase:'2280-2170',prioridad:2,ciudad:'Choluteca',depto:'Choluteca',direccion:'Choluteca',coords:'13.2995,-87.1937'},
+  {id:7,empresa:'Energías Solares S.A.',alias:'ENERGSOLAR',sector:'solar',proyecto:'Parque Solar 6.25 MW',capacidad:'6.25 MW',emailBase:'energiassolares@scatecsolar.com',telBase:'2280-2170',prioridad:2,ciudad:'Choluteca',depto:'Choluteca',direccion:'Choluteca',coords:'13.2995,-87.1937'},
+  {id:8,empresa:'Solar Power S.A. de C.V.',alias:'SOPOSA',sector:'solar',proyecto:'Central Fotovoltaica Nacaome',capacidad:'N/D',emailBase:'earias@soposa.com',telBase:'2550-4089',prioridad:3,ciudad:'Nacaome',depto:'Valle',direccion:'Nueva Nacaome',coords:'13.5253,-87.4941'},
+  {id:9,empresa:'Cía. Hondureña de Energía Solar S.A. de C.V.',alias:'COHESSA',sector:'solar',proyecto:'Central Fotovoltaica Valle',capacidad:'N/D',emailBase:'earias@cohessa.com',telBase:'2561-4636',prioridad:3,ciudad:'Nacaome',depto:'Valle',direccion:'Nueva Nacaome',coords:'13.5253,-87.4941'},
+  {id:10,empresa:'MECER – Mecanismos de Energía Renovable S.A. de C.V.',alias:'MECER',sector:'solar',proyecto:'Solar del Sur – MECER',capacidad:'N/D',emailBase:'cree-mecer@terra-energia.com',telBase:'2202-8690',prioridad:2,ciudad:'Tegucigalpa',depto:'Francisco Morazán',direccion:'Santa Lucía',coords:'14.0918,-87.0682'},
+  {id:11,empresa:'Proenergy S.A.',alias:'PROENERGY',sector:'solar',proyecto:'Energía Solar Corporativa',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'San Pedro Sula',depto:'Cortés',direccion:'',coords:'15.5020,-88.0254'},
+  {id:12,empresa:'Tecnosol Honduras',alias:'TECNOSOL',sector:'solar',proyecto:'Instalaciones solares comerciales',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'Tegucigalpa',depto:'Francisco Morazán',direccion:'',coords:'14.0818,-87.2068'},
+  {id:13,empresa:'Celsia Honduras S.A.',alias:'CELSIA',sector:'solar',proyecto:'Proyectos Solares Celsia',capacidad:'N/D',emailBase:'',telBase:'',prioridad:3,ciudad:'San Pedro Sula',depto:'Cortés',direccion:'',coords:'15.5020,-88.0254'},
+  {id:14,empresa:'Energía Eólica de Honduras S.A.',alias:'EEHSA',sector:'eolico',proyecto:'Parque Eólico Cerro de Hula',capacidad:'102 MW',emailBase:'',telBase:'2235-6800',prioridad:3,ciudad:'Tegucigalpa',depto:'Francisco Morazán',direccion:'Cerro de Hula',coords:'14.0000,-87.1500'},
+  {id:15,empresa:'Vientos del Este S.A. de C.V.',alias:'VESAM',sector:'eolico',proyecto:'Parque Eólico San Marcos de Colón',capacidad:'124.6 MW',emailBase:'',telBase:'',prioridad:3,ciudad:'San Marcos de Colón',depto:'Choluteca',direccion:'',coords:'13.4375,-86.8154'},
+  {id:16,empresa:'Vientos de la Esperanza S.A.',alias:'VESA',sector:'eolico',proyecto:'Parque Eólico',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'',depto:'',direccion:'',coords:''},
+  {id:17,empresa:'Geotérmica Platanares S.A.',alias:'GEOPLATANARES',sector:'hidro',proyecto:'Planta Geotérmica Platanares',capacidad:'35 MW',emailBase:'',telBase:'',prioridad:3,ciudad:'San Marcos de Ocotepeque',depto:'Ocotepeque',direccion:'',coords:'14.4046,-89.1808'},
+  {id:18,empresa:'Constructora e Ingeniería S.A.',alias:'CISA',sector:'hidro',proyecto:'Hidroeléctrica Río Blanco',capacidad:'8.88 MW',emailBase:'',telBase:'',prioridad:2,ciudad:'',depto:'',direccion:'',coords:''},
+  {id:19,empresa:'Hidroeléctrica El Arenal S.A.',alias:'ARENAL',sector:'hidro',proyecto:'H.E. El Arenal',capacidad:'38 MW',emailBase:'',telBase:'',prioridad:3,ciudad:'Siguatepeque',depto:'Comayagua',direccion:'',coords:'14.5996,-87.8264'},
+  {id:20,empresa:'Acqua Futura S.A.',alias:'ACQUA FUTURA',sector:'hidro',proyecto:'Planta Hidroeléctrica',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'',depto:'',direccion:'',coords:''},
+  {id:21,empresa:'Peña Blanca Power Company',alias:'PEÑA BLANCA',sector:'hidro',proyecto:'H.E. Peña Blanca',capacidad:'102 MW',emailBase:'',telBase:'',prioridad:3,ciudad:'La Esperanza',depto:'Intibucá',direccion:'',coords:'14.3073,-88.1782'},
+  {id:22,empresa:'SHOL – Small Hydropower of Latin',alias:'SHOL',sector:'hidro',proyecto:'Mini Hidroeléctrica',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'',depto:'',direccion:'',coords:''},
+  {id:23,empresa:'Energía de Corriente S.A.',alias:'ENERCOSA',sector:'hidro',proyecto:'',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'',depto:'',direccion:'',coords:''},
+  {id:24,empresa:'Cohcuy Energy S.A.',alias:'COHCUY',sector:'hidro',proyecto:'',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'',depto:'',direccion:'',coords:''},
+  {id:25,empresa:'Luz y Fuerza del Sur S.A.',alias:'LUFUSSA',sector:'termico',proyecto:'Central Térmica Choloma',capacidad:'>200 MW',emailBase:'',telBase:'2556-7100',prioridad:3,ciudad:'Choloma',depto:'Cortés',direccion:'',coords:'15.6075,-87.9524'},
+  {id:26,empresa:'Empresa de Mantenimiento y Construcción Eléctrica',alias:'EMCE',sector:'termico',proyecto:'Central Térmica',capacidad:'62 MW',emailBase:'',telBase:'',prioridad:2,ciudad:'Puerto Cortés',depto:'Cortés',direccion:'',coords:'15.8500,-87.9333'},
+  {id:27,empresa:'Energía y Renovables S.A.',alias:'ENERSA',sector:'termico',proyecto:'Central Eléctrica',capacidad:'281 MW',emailBase:'',telBase:'',prioridad:3,ciudad:'',depto:'',direccion:'',coords:''},
+  {id:28,empresa:'Castor Energy S.A.',alias:'CASTORENERGY',sector:'termico',proyecto:'Biomasa',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'',depto:'',direccion:'',coords:''},
+  {id:29,empresa:'Chumbagua Power S.A.',alias:'CHUMBAGUA',sector:'termico',proyecto:'',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'',depto:'',direccion:'',coords:''},
+  {id:30,empresa:'Energías Renovables S.A.',alias:'ENERESA',sector:'termico',proyecto:'Biomasa/Bagazo',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'',depto:'',direccion:'',coords:''},
+  {id:31,empresa:'Panamerican Energy Corporation S.A.',alias:'PECSA',sector:'multi',proyecto:'Multi-energía',capacidad:'N/D',emailBase:'',telBase:'2221-8630',prioridad:3,ciudad:'Tegucigalpa',depto:'Francisco Morazán',direccion:'',coords:'14.0818,-87.2068'},
+  {id:32,empresa:'Honduras Global Power Corp.',alias:'HGPC',sector:'multi',proyecto:'',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'San Pedro Sula',depto:'Cortés',direccion:'',coords:'15.5020,-88.0254'},
+  {id:33,empresa:'Empresa de Energía Eléctrica S.A.',alias:'ELCOSA',sector:'multi',proyecto:'',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'Tegucigalpa',depto:'Francisco Morazán',direccion:'',coords:'14.0818,-87.2068'},
+  {id:34,empresa:'Laeisz Honduras S.A.',alias:'LAEISZ',sector:'multi',proyecto:'',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'San Pedro Sula',depto:'Cortés',direccion:'',coords:'15.5020,-88.0254'},
+  {id:35,empresa:'Enetran S.A.',alias:'ENETRAN',sector:'multi',proyecto:'Transmisión',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'Tegucigalpa',depto:'Francisco Morazán',direccion:'',coords:'14.0818,-87.2068'},
+];
+
+// ================================================================
+// STATE
+// ================================================================
+let CRM = {}; // {id: {estado, contacto, cargo, tel, whatsapp, email, email2, contacto2, cargo2, tel2, telEstado, canal, fechaVisita, horaVisita, notas, historial, tareas, valor, prob, cierre, fuente, opDesc, servicios, prioridad}}
+let actividades = [];
+let eventos = [];
+let currentPanel = null;
+let calDate = new Date();
+let syncTimer = null;
+let saveTimers = {};
+
+function gc(id){ return CRM[id] || (CRM[id] = defaultCRM(id)); }
+function defaultCRM(id){
+  const d = BASE_DATA.find(x=>x.id===id)||{};
+  return {estado:'pendiente',contacto:'',cargo:'',tel:d.telBase||'',whatsapp:'',email:d.emailBase||'',email2:'',contacto2:'',cargo2:'',tel2:'',telEstado:'',canal:'',fechaVisita:'',horaVisita:'',notas:'',historial:[],tareas:[],valor:0,prob:0,cierre:'',fuente:'',opDesc:'',servicios:[],prioridad:d.prioridad||2};
+}
+
+// ================================================================
+// GOOGLE SHEETS SYNC
+// ================================================================
+async function gasRead(){
+  const r = await fetch(`${SCRIPT_URL}?action=read`);
+  if(!r.ok) throw new Error('Read '+r.status);
+  return r.json();
+}
+async function gasWrite(rowIndex, row){
+  const r = await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'write',rowIndex,row})});
+  if(!r.ok) throw new Error('Write '+r.status);
+  return r.json();
+}
+
+const HDR = ['ID','Estado','Contacto','Cargo','Tel','WhatsApp','Email','Email2','Contacto2','Cargo2','Tel2','TelEstado','Canal','FechaVisita','HoraVisita','Notas','Historial','Tareas','Eventos','Valor','Prob','Cierre','Fuente','OpDesc','Servicios','Prioridad'];
+
+async function loadFromSheets(silent=false){
+  try {
+    const res = await gasRead();
+    const rows = res.data||[];
+    if(rows.length<2){
+      if(!silent) setSyncStatus('ok','Inicializando hoja...');
+      await gasWrite(1,HDR);
+      for(let i=0;i<BASE_DATA.length;i++){
+        const d=BASE_DATA[i];
+        const c=defaultCRM(d.id);
+        CRM[d.id]=c;
+        await gasWrite(i+2,rowToArr(d.id,c));
+      }
+      setSyncStatus('ok','✅ Hoja inicializada con '+BASE_DATA.length+' empresas');
+    } else {
+      for(let i=1;i<rows.length;i++){
+        const row=rows[i];
+        const id=parseInt(row[0]);
+        if(!id||isNaN(id)) continue;
+        CRM[id]={
+          estado:row[1]||'pendiente',contacto:row[2]||'',cargo:row[3]||'',
+          tel:row[4]||'',whatsapp:row[5]||'',email:row[6]||'',email2:row[7]||'',
+          contacto2:row[8]||'',cargo2:row[9]||'',tel2:row[10]||'',telEstado:row[11]||'',
+          canal:row[12]||'',fechaVisita:row[13]||'',horaVisita:row[14]||'',
+          notas:row[15]||'',historial:safeJSON(row[16]),tareas:safeJSON(row[17]),
+          valor:parseFloat(row[19])||0,prob:parseInt(row[20])||0,
+          cierre:row[21]||'',fuente:row[22]||'',opDesc:row[23]||'',
+          servicios:safeJSON(row[24]),prioridad:parseInt(row[25])||2
+        };
+      }
+      if(!silent) setSyncStatus('ok','✅ Sincronizado con Google Sheets');
+    }
+    updateSyncTime();
+    renderAll();
+    if(currentPanel) renderPanel(currentPanel);
+  } catch(e){
+    setSyncStatus('error','⚠️ Error de conexión — trabajando offline');
+    if(!silent){ BASE_DATA.forEach(d=>{ if(!CRM[d.id]) CRM[d.id]=defaultCRM(d.id); }); renderAll(); }
+    console.error(e);
+  }
+}
+
+function rowToArr(id,c){
+  return [id,c.estado,c.contacto,c.cargo,c.tel,c.whatsapp,c.email,c.email2,c.contacto2,c.cargo2,c.tel2,c.telEstado,c.canal,c.fechaVisita,c.horaVisita,c.notas,JSON.stringify(c.historial||[]),JSON.stringify(c.tareas||[]),'',c.valor||0,c.prob||0,c.cierre,c.fuente,c.opDesc,JSON.stringify(c.servicios||[]),c.prioridad||2];
+}
+
+async function saveRow(id){
+  const c=gc(id);
+  const rowIdx=id+1; // row 1 = header, row 2 = id1, etc.
+  try {
+    setSyncStatus('pending','Guardando...');
+    await gasWrite(rowIdx,rowToArr(id,c));
+    setSyncStatus('ok','✅ Guardado en Google Sheets');
+    updateSyncTime();
+  } catch(e){
+    setSyncStatus('error','⚠️ Error al guardar');
+  }
+}
+
+function scheduleSave(id){
+  clearTimeout(saveTimers[id]);
+  saveTimers[id] = setTimeout(()=>saveRow(id),1200);
+}
+
+function autoSave(){ if(currentPanel) scheduleSave(currentPanel); }
+
+async function syncNow(){ await loadFromSheets(false); }
+
+function safeJSON(s){ try{ return s?JSON.parse(s):[]; }catch{ return []; } }
+
+function setSyncStatus(type,msg){
+  const sdot=document.getElementById('sdot');
+  const smsg=document.getElementById('sync-msg');
+  const tdot=document.getElementById('tdot');
+  const tsync=document.getElementById('tsync');
+  sdot.className='sync-dot'+(type==='pending'?' pending':type==='error'?' error':'');
+  tdot.className='sync-dot'+(type==='pending'?' pending':type==='error'?' error':'');
+  smsg.textContent=msg;
+  tsync.textContent=type==='ok'?'Sincronizado':type==='pending'?'Guardando...':'Error sync';
+}
+function updateSyncTime(){ document.getElementById('sync-time').textContent='Última sync: '+new Date().toLocaleTimeString('es-HN'); }
+
+// ================================================================
+// INIT
+// ================================================================
+function init(){
+  // Populate filters
+  const deptos=[...new Set(BASE_DATA.map(d=>d.depto).filter(Boolean))].sort();
+  const sel=document.getElementById('f-depto');
+  deptos.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;sel.appendChild(o);});
+  populateEmpresaSelects();
+  // Defaults
+  const today=new Date().toISOString().split('T')[0];
+  document.getElementById('qe-fecha').value=today;
+  document.getElementById('h-fecha').value=today;
+  document.getElementById('t-fecha').value=today;
+  // Load local first, then sync
+  const saved=localStorage.getItem('as360_crm');
+  const savedActs=localStorage.getItem('as360_acts');
+  const savedEvts=localStorage.getItem('as360_evts');
+  if(saved){ try{ const d=JSON.parse(saved); Object.assign(CRM,d); }catch{} }
+  if(savedActs){ try{ actividades=JSON.parse(savedActs); }catch{} }
+  if(savedEvts){ try{ eventos=JSON.parse(savedEvts); }catch{} }
+  renderAll();
+  loadFromSheets(false);
+  syncTimer=setInterval(()=>loadFromSheets(true),SYNC_INTERVAL);
+}
+
+function saveLocal(){
+  localStorage.setItem('as360_crm',JSON.stringify(CRM));
+  localStorage.setItem('as360_acts',JSON.stringify(actividades));
+  localStorage.setItem('as360_evts',JSON.stringify(eventos));
+}
+
+function populateEmpresaSelects(){
+  const all=BASE_DATA;
+  ['qe-empresa','fa-empresa'].forEach(id=>{
+    const sel=document.getElementById(id);
+    const isFilter=id.startsWith('fa');
+    if(isFilter) sel.innerHTML='<option value="">Todas las empresas</option>';
+    else sel.innerHTML='';
+    all.forEach(d=>{const o=document.createElement('option');o.value=d.id;o.textContent=d.alias||d.empresa;sel.appendChild(o);});
+  });
+}
+
+function renderAll(){
+  renderDashboard();
+  renderTable();
+  renderCalendar();
+  updateBadges();
+  saveLocal();
+}
+
+// ================================================================
+// NAVIGATION
+// ================================================================
+function showPage(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(el) el.classList.add('active');
+  const titles={dashboard:'Dashboard',prospectos:'Prospectos',pipeline:'Pipeline',calendario:'Calendario',actividades:'Actividades',reportes:'Reportes'};
+  document.getElementById('page-title').textContent=titles[id]||id;
+  if(id==='pipeline') renderKanban();
+  if(id==='calendario') renderCalendar();
+  if(id==='actividades') renderActividades();
+  if(id==='reportes') renderReportes();
+  if(id==='dashboard') renderDashboard();
+}
+function filterServicio(s,el){
+  showPage('prospectos',el);
+  document.getElementById('f-servicio').value=s;
+  renderTable();
+}
+
+// ================================================================
+// DASHBOARD
+// ================================================================
+function renderDashboard(){
+  const total=BASE_DATA.length;
+  const estados=countByEstado();
+  const hoy=new Date().toISOString().split('T')[0];
+  const evHoy=eventos.filter(e=>e.fecha===hoy).length;
+  const stats=[
+    {label:'Total Prospectos',val:total,sub:'Empresas en CRM',color:'blue',icon:'🏢'},
+    {label:'Prioritarios',val:estados.prioritario||0,sub:'Alta urgencia',color:'red',icon:'🔴'},
+    {label:'Programados',val:estados.programado||0,sub:'Con visita agendada',color:'yellow',icon:'📅'},
+    {label:'Contactados',val:estados.contactado||0,sub:'En proceso',color:'blue',icon:'📞'},
+    {label:'Ganados',val:estados.ganado||0,sub:'Clientes convertidos',color:'green',icon:'🏆'},
+    {label:'Hoy',val:evHoy,sub:'Eventos del día',color:'purple',icon:'⚡'},
+  ];
+  document.getElementById('stats-grid').innerHTML=stats.map(s=>`
+    <div class="stat-card ${s.color}" onclick="showPage('prospectos',null)">
+      <div class="stat-label">${s.label}</div>
+      <div class="stat-val">${s.val}</div>
+      <div class="stat-sub">${s.sub}</div>
+      <div class="stat-icon">${s.icon}</div>
+    </div>`).join('');
+  // Charts
+  renderBarChart('dash-estados',estados,Object.keys(ESTADO_LABELS).filter(k=>estados[k]));
+  const sectorC=countBySector();
+  renderBarChart('dash-sectores',sectorC,Object.keys(sectorC));
+  // Upcoming
+  const upcoming=eventos.filter(e=>e.fecha>=hoy).sort((a,b)=>a.fecha.localeCompare(b.fecha)).slice(0,6);
+  const ul=document.getElementById('dash-upcoming');
+  ul.innerHTML=upcoming.length?upcoming.map(e=>{
+    const d=BASE_DATA.find(x=>x.id==e.empresaId);
+    return `<div class="upcoming-item"><div class="up-date">${fmtDate(e.fecha)}</div><div><div class="up-empresa">${d?d.alias||d.empresa:'—'}</div><div class="up-tipo">${histIcon(e.tipo)} ${e.tipo} ${e.nota?'— '+e.nota:''}</div></div></div>`;
+  }).join(''):'<div style="color:var(--text3);font-size:12px;padding:12px 0;">Sin eventos próximos</div>';
+}
+
+function countByEstado(){
+  const c={};
+  BASE_DATA.forEach(d=>{ const e=gc(d.id).estado||'pendiente'; c[e]=(c[e]||0)+1; });
+  return c;
+}
+function countBySector(){
+  const c={};
+  BASE_DATA.forEach(d=>{ c[d.sector]=(c[d.sector]||0)+1; });
+  return c;
+}
+
+function renderBarChart(id,data,order){
+  const el=document.getElementById(id);
+  const max=Math.max(...Object.values(data),1);
+  const colors=['#00d4ff','#ff4444','#ffb300','#00e676','#b57bee','#ff6b00','#ff6b9d'];
+  el.innerHTML='<div class="bar-chart">'+order.map((k,i)=>{
+    const lbl=(ESTADO_LABELS[k]||SECTOR_MAP[k]||k).replace(/^[^\s]+ /,'');
+    return `<div class="bar-item"><div class="bar-label">${lbl.length>12?lbl.slice(0,11)+'…':lbl}</div><div class="bar-track"><div class="bar-fill" style="width:${(data[k]||0)/max*100}%;background:${colors[i%colors.length]}">${data[k]||0}</div></div><div class="bar-num">${data[k]||0}</div></div>`;
+  }).join('')+'</div>';
+}
+
+// ================================================================
+// TABLE
+// ================================================================
+function renderTable(){
+  const q=document.getElementById('search').value.toLowerCase();
+  const fs=document.getElementById('f-sector').value;
+  const fe=document.getElementById('f-estado').value;
+  const fd=document.getElementById('f-depto').value;
+  const fp=document.getElementById('f-prio').value;
+  const fserv=document.getElementById('f-servicio').value;
+  let list=BASE_DATA.filter(d=>{
+    if(fs && d.sector!==fs) return false;
+    const c=gc(d.id);
+    if(fe && (c.estado||'pendiente')!==fe) return false;
+    const city=c.ciudad||d.ciudad||''; const dep=c.depto||d.depto||'';
+    if(fd && dep!==fd) return false;
+    if(fp && (c.prioridad||d.prioridad)!=fp) return false;
+    if(fserv && !(c.servicios||[]).includes(fserv)) return false;
+    if(q){
+      const hay=[d.empresa,d.alias,c.contacto,city,c.email,d.emailBase,c.tel,d.telBase,d.proyecto].join(' ').toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  document.getElementById('table-info').textContent=`Mostrando ${list.length} de ${BASE_DATA.length} prospectos`;
+  document.getElementById('badge-total').textContent=BASE_DATA.length;
+  const tbody=document.getElementById('table-body');
+  if(!list.length){ tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state"><div class="ei">🔍</div><p>Sin resultados</p></div></td></tr>`; return; }
+  tbody.innerHTML=list.map(d=>{
+    const c=gc(d.id);
+    const e=c.estado||'pendiente';
+    const pri=c.prioridad||d.prioridad||2;
+    const tel=c.tel||d.telBase||'';
+    const email=c.email||d.emailBase||'';
+    const city=c.ciudad||d.ciudad||'';
+    const dep=c.depto||d.depto||'';
+    const prox=c.fechaVisita||'';
+    return `<tr onclick="openPanel(${d.id})">
+      <td style="color:var(--text3);font-size:10px;font-family:'JetBrains Mono',monospace;">${d.id}</td>
+      <td><div class="empresa-name">${d.empresa.length>38?d.empresa.slice(0,37)+'…':d.empresa}</div><div class="empresa-alias">${d.alias}</div></td>
+      <td><span class="sector-badge ${SECTOR_CSS[d.sector]||'sec-otro'}">${SECTOR_MAP[d.sector]||d.sector}</span></td>
+      <td>
+        ${email?`<div style="font-size:10px;color:var(--accent)">✉ ${email}</div>`:''}
+        ${tel?`<div style="font-size:10px;color:var(--text2)">📞 ${tel}</div>`:''}
+        ${c.contacto?`<div style="font-size:10px;color:var(--text3)">👤 ${c.contacto}${c.cargo?' · '+c.cargo:''}</div>`:''}
+      </td>
+      <td style="font-size:11px;color:var(--text2)">${city||dep?`📍 ${city}${city&&dep?', ':''}${dep}`:'—'}</td>
+      <td class="stars">${'⭐'.repeat(pri)}</td>
+      <td onclick="event.stopPropagation()">
+        <select class="vs vs-${e}" onchange="setEstado(${d.id},this.value,this)">
+          ${Object.entries(ESTADO_LABELS).map(([v,l])=>`<option value="${v}"${v===e?' selected':''}>${l}</option>`).join('')}
+        </select>
+      </td>
+      <td style="font-size:10px;color:var(--purple);font-family:'JetBrains Mono',monospace;">${prox?fmtDate(prox):'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function setEstado(id,v,el){
+  gc(id).estado=v;
+  el.className=`vs vs-${v}`;
+  updateBadges();
+  if(currentPanel===id){ document.getElementById('p-estado').value=v; document.getElementById('p-estado').className=`vs vs-${v}`; }
+  scheduleSave(id);
+  saveLocal();
+}
+
+// ================================================================
+// PANEL
+// ================================================================
+function openPanel(id){
+  currentPanel=id;
+  renderPanel(id);
+  document.getElementById('detail-panel').classList.add('open');
+}
+function closePanel(){ document.getElementById('detail-panel').classList.remove('open'); currentPanel=null; }
+
+function renderPanel(id){
+  const d=BASE_DATA.find(x=>x.id===id); if(!d) return;
+  const c=gc(id);
+  document.getElementById('p-name').textContent=d.empresa;
+  document.getElementById('p-alias').textContent=d.alias;
+  // Info tab
+  const estadoSel=document.getElementById('p-estado');
+  estadoSel.value=c.estado||'pendiente';
+  estadoSel.className=`vs vs-${c.estado||'pendiente'}`;
+  const pri=c.prioridad||d.prioridad||2;
+  [1,2,3].forEach(i=>{ const b=document.getElementById('prio-'+i); b.style.background=pri>=i?'rgba(255,179,0,.2)':''; b.style.borderColor=pri>=i?'var(--yellow)':''; });
+  document.getElementById('p-sector').textContent=(SECTOR_MAP[d.sector]||d.sector);
+  document.getElementById('p-capacidad').textContent=d.capacidad||'—';
+  document.getElementById('p-proyecto').textContent=d.proyecto||'—';
+  document.getElementById('p-ciudad').textContent=c.ciudad||d.ciudad||'—';
+  document.getElementById('p-depto').textContent=c.depto||d.depto||'—';
+  document.getElementById('p-dir').textContent=c.direccion||d.direccion||'—';
+  const coords=c.coords||d.coords||'';
+  document.getElementById('p-coords').textContent=coords||'—';
+  const mapUrl=coords?`https://www.google.com/maps?q=${coords}`:`https://www.google.com/maps/search/${encodeURIComponent((c.ciudad||d.ciudad||'')+' '+(c.depto||d.depto||'')+' Honduras')}`;
+  document.getElementById('p-maplink').href=mapUrl;
+  // Servicios tags
+  document.querySelectorAll('#p-servicios-tags .tag-opt').forEach(el=>{ el.classList.toggle('selected',(c.servicios||[]).includes(el.dataset.v)); });
+  document.getElementById('p-fecha-visita').value=c.fechaVisita||'';
+  document.getElementById('p-hora-visita').value=c.horaVisita||'';
+  document.getElementById('p-canal').value=c.canal||'';
+  document.getElementById('p-notas').value=c.notas||'';
+  // Contacto tab
+  document.getElementById('p-contacto').value=c.contacto||'';
+  document.getElementById('p-cargo').value=c.cargo||'';
+  document.getElementById('p-tel').value=c.tel||d.telBase||'';
+  document.getElementById('p-whatsapp').value=c.whatsapp||'';
+  document.getElementById('p-email').value=c.email||d.emailBase||'';
+  document.getElementById('p-email2').value=c.email2||'';
+  document.getElementById('p-contacto2').value=c.contacto2||'';
+  document.getElementById('p-cargo2').value=c.cargo2||'';
+  document.getElementById('p-tel2').value=c.tel2||'';
+  document.getElementById('p-tel-estado').value=c.telEstado||'';
+  // Oportunidad tab
+  document.getElementById('p-valor').value=c.valor||'';
+  document.getElementById('p-prob').value=c.prob||'';
+  document.getElementById('p-cierre').value=c.cierre||'';
+  document.getElementById('p-fuente').value=c.fuente||'';
+  document.getElementById('p-op-desc').value=c.opDesc||'';
+  updateProbBar();
+  // Historial
+  renderHistorial(id);
+  // Tareas
+  renderTareas(id);
+}
+
+function setPanelEstado(v,el){
+  if(!currentPanel) return;
+  el.className=`vs vs-${v}`;
+  gc(currentPanel).estado=v;
+  scheduleSave(currentPanel);
+  saveLocal();
+  renderTable();
+  updateBadges();
+  showToast(ESTADO_LABELS[v]||v,'success');
+}
+function setPrioridad(val){
+  if(!currentPanel) return;
+  gc(currentPanel).prioridad=val;
+  [1,2,3].forEach(i=>{ const b=document.getElementById('prio-'+i); b.style.background=val>=i?'rgba(255,179,0,.2)':''; b.style.borderColor=val>=i?'var(--yellow)':''; });
+  scheduleSave(currentPanel); saveLocal(); renderTable();
+}
+function toggleServTag(el){
+  el.classList.toggle('selected');
+  if(!currentPanel) return;
+  const c=gc(currentPanel);
+  const v=el.dataset.v;
+  if(!c.servicios) c.servicios=[];
+  if(el.classList.contains('selected')){ if(!c.servicios.includes(v)) c.servicios.push(v); }
+  else c.servicios=c.servicios.filter(s=>s!==v);
+  autoSave();
+}
+function updateProbBar(){ const p=parseInt(document.getElementById('p-prob').value)||0; document.getElementById('prob-fill').style.width=p+'%'; }
+
+function savePanel(){
+  if(!currentPanel) return;
+  const c=gc(currentPanel);
+  c.contacto=document.getElementById('p-contacto').value;
+  c.cargo=document.getElementById('p-cargo').value;
+  c.tel=document.getElementById('p-tel').value;
+  c.whatsapp=document.getElementById('p-whatsapp').value;
+  c.email=document.getElementById('p-email').value;
+  c.email2=document.getElementById('p-email2').value;
+  c.contacto2=document.getElementById('p-contacto2').value;
+  c.cargo2=document.getElementById('p-cargo2').value;
+  c.tel2=document.getElementById('p-tel2').value;
+  c.telEstado=document.getElementById('p-tel-estado').value;
+  c.canal=document.getElementById('p-canal').value;
+  c.fechaVisita=document.getElementById('p-fecha-visita').value;
+  c.horaVisita=document.getElementById('p-hora-visita').value;
+  c.notas=document.getElementById('p-notas').value;
+  c.valor=parseFloat(document.getElementById('p-valor').value)||0;
+  c.prob=parseInt(document.getElementById('p-prob').value)||0;
+  c.cierre=document.getElementById('p-cierre').value;
+  c.fuente=document.getElementById('p-fuente').value;
+  c.opDesc=document.getElementById('p-op-desc').value;
+  scheduleSave(currentPanel);
+  saveLocal();
+  renderTable();
+  showToast('💾 Guardado','success');
+}
+
+function renderHistorial(id){
+  const c=gc(id);
+  const hist=[...(c.historial||[])].reverse();
+  const el=document.getElementById('historial-list');
+  if(!hist.length){ el.innerHTML='<div class="empty-state"><div class="ei">📋</div><p>Sin actividades registradas</p></div>'; return; }
+  el.innerHTML=hist.map(h=>`
+    <div class="hist-item ${h.tipo}">
+      <div class="hist-type" style="color:${histColor(h.tipo)}">${histIcon(h.tipo)} ${h.tipo.toUpperCase()}</div>
+      <div class="hist-text">${h.texto}</div>
+      <div class="hist-date">${fmtDate(h.fecha)} ${h.hora||''}</div>
+    </div>`).join('');
+}
+function renderTareas(id){
+  const c=gc(id);
+  const el=document.getElementById('tareas-list');
+  if(!(c.tareas||[]).length){ el.innerHTML='<div class="empty-state"><div class="ei">✅</div><p>Sin tareas pendientes</p></div>'; return; }
+  el.innerHTML=c.tareas.map((t,i)=>`
+    <div class="tarea-item" onclick="toggleTarea(${i})">
+      <div class="tarea-check ${t.done?'done':''}">✓</div>
+      <div class="tarea-text ${t.done?'done':''}">${t.texto}</div>
+      <div class="tarea-date">${fmtDate(t.fecha)}</div>
+    </div>`).join('');
+}
+
+function switchTab(name,el){
+  document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.ptab-content').forEach(c=>c.classList.remove('active'));
+  if(el) el.classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+function addHistorial(){
+  if(!currentPanel) return;
+  const c=gc(currentPanel);
+  const tipo=document.getElementById('h-tipo').value;
+  const texto=document.getElementById('h-texto').value.trim();
+  const fecha=document.getElementById('h-fecha').value;
+  if(!texto){ showToast('Escribe un detalle de la actividad','error'); return; }
+  if(!c.historial) c.historial=[];
+  const entry={tipo,texto,fecha,hora:new Date().toLocaleTimeString('es-HN',{hour:'2-digit',minute:'2-digit'})};
+  c.historial.push(entry);
+  const d=BASE_DATA.find(x=>x.id===currentPanel);
+  actividades.push({empresaId:currentPanel,empresa:d?d.alias||d.empresa:'',...entry});
+  document.getElementById('h-texto').value='';
+  scheduleSave(currentPanel); saveLocal();
+  renderHistorial(currentPanel);
+  showToast(histIcon(tipo)+' Actividad registrada','success');
+}
+function addTarea(){
+  if(!currentPanel) return;
+  const c=gc(currentPanel);
+  const texto=document.getElementById('t-texto').value.trim();
+  const fecha=document.getElementById('t-fecha').value;
+  const tipo=document.getElementById('t-tipo').value;
+  if(!texto){ showToast('Escribe el texto de la tarea','error'); return; }
+  if(!c.tareas) c.tareas=[];
+  c.tareas.push({texto,fecha,tipo,done:false});
+  document.getElementById('t-texto').value='';
+  scheduleSave(currentPanel); saveLocal();
+  renderTareas(currentPanel);
+  showToast('✅ Tarea agregada','success');
+}
+function toggleTarea(idx){
+  if(!currentPanel) return;
+  const c=gc(currentPanel);
+  c.tareas[idx].done=!c.tareas[idx].done;
+  scheduleSave(currentPanel); saveLocal();
+  renderTareas(currentPanel);
+}
+
+// ================================================================
+// MODAL NUEVO PROSPECTO
+// ================================================================
+function openModal(){ document.getElementById('modal-overlay').classList.add('open'); }
+function closeModal(){ document.getElementById('modal-overlay').classList.remove('open'); }
+
+async function saveNewProspecto(){
+  const emp=document.getElementById('m-empresa').value.trim();
+  if(!emp){ showToast('El nombre de la empresa es requerido','error'); return; }
+  const newId=Math.max(...BASE_DATA.map(d=>d.id))+1+Object.keys(CRM).filter(k=>parseInt(k)>35).length;
+  const servicios=[...document.querySelectorAll('#m-servicios .tag-opt.selected')].map(el=>el.dataset.v);
+  const newData={id:newId,empresa:emp,alias:document.getElementById('m-alias').value,sector:document.getElementById('m-sector').value,proyecto:document.getElementById('m-proyecto').value,capacidad:document.getElementById('m-capacidad').value,emailBase:document.getElementById('m-email').value,telBase:document.getElementById('m-tel').value,prioridad:parseInt(document.getElementById('m-prioridad').value)||2,ciudad:document.getElementById('m-ciudad').value,depto:document.getElementById('m-depto').value,direccion:'',coords:''};
+  BASE_DATA.push(newData);
+  const estado=document.getElementById('m-estado').value;
+  CRM[newId]={...defaultCRM(newId),estado,contacto:document.getElementById('m-contacto').value,tel:newData.telBase,email:newData.emailBase,notas:document.getElementById('m-notas').value,servicios,prioridad:newData.prioridad};
+  try {
+    setSyncStatus('pending','Guardando nuevo prospecto...');
+    await gasWrite(newId+1,rowToArr(newId,CRM[newId]));
+    setSyncStatus('ok','✅ Prospecto guardado en Google Sheets');
+  } catch(e){ setSyncStatus('error','⚠️ Error al guardar'); }
+  saveLocal(); renderAll(); populateEmpresaSelects(); closeModal();
+  document.querySelectorAll('#m-servicios .tag-opt').forEach(el=>el.classList.remove('selected'));
+  ['m-empresa','m-alias','m-proyecto','m-capacidad','m-ciudad','m-contacto','m-tel','m-email','m-notas'].forEach(id=>{ document.getElementById(id).value=''; });
+  showToast('🏢 Prospecto agregado: '+(newData.alias||emp),'success');
+}
+
+// ================================================================
+// KANBAN
+// ================================================================
+function renderKanban(){
+  const estados=['pendiente','prioritario','programado','contactado','propuesta','visitado','negociando','ganado'];
+  const colors={pendiente:'#f59e0b',prioritario:'#f87171',programado:'#c084fc',contactado:'#60a5fa',propuesta:'#fbbf24',visitado:'#22c55e',negociando:'#fb923c',ganado:'#22c55e'};
+  document.getElementById('kanban').innerHTML=estados.map(e=>{
+    const cards=BASE_DATA.filter(d=>(gc(d.id).estado||'pendiente')===e);
+    return `<div class="kanban-col">
+      <div class="kanban-col-header" style="background:${colors[e]}22;color:${colors[e]}">
+        <span>${ESTADO_LABELS[e]}</span><span>${cards.length}</span>
+      </div>
+      <div class="kanban-col-body">
+        ${cards.map(d=>`<div class="kcard" onclick="openPanel(${d.id})">
+          <div class="kc-empresa">${d.alias||d.empresa}</div>
+          <div class="kc-sector">${SECTOR_MAP[d.sector]||d.sector}</div>
+          ${gc(d.id).valor?`<div class="kc-valor">L. ${gc(d.id).valor.toLocaleString()}</div>`:''}
+          ${'⭐'.repeat(gc(d.id).prioridad||d.prioridad||2)}
+        </div>`).join('')}
+        ${!cards.length?'<div style="text-align:center;padding:16px;color:var(--text3);font-size:11px;">Vacío</div>':''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ================================================================
+// CALENDAR
+// ================================================================
+function renderCalendar(){
+  const y=calDate.getFullYear(),m=calDate.getMonth();
+  const months=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  document.getElementById('cal-title').textContent=months[m]+' '+y;
+  const firstDay=new Date(y,m,1).getDay();
+  const dim=new Date(y,m+1,0).getDate();
+  const today=new Date().toISOString().split('T')[0];
+  let html='';
+  for(let i=0;i<firstDay;i++){const d=new Date(y,m,-(firstDay-i-1));html+=`<div class="cal-day other-month"><div class="cal-day-num">${d.getDate()}</div></div>`;}
+  for(let d=1;d<=dim;d++){
+    const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const evs=eventos.filter(e=>e.fecha===ds);
+    html+=`<div class="cal-day ${ds===today?'today':''}" onclick="selectDay('${ds}')">
+      <div class="cal-day-num">${d}</div>
+      ${evs.slice(0,3).map(e=>`<div class="cal-event ${e.tipo}">${e.empNombre||''}</div>`).join('')}
+      ${evs.length>3?`<div style="font-size:9px;color:var(--text3)">+${evs.length-3}</div>`:''}
+    </div>`;
+  }
+  document.getElementById('cal-days').innerHTML=html;
+  const upcoming=eventos.filter(e=>e.fecha>=today).sort((a,b)=>a.fecha.localeCompare(b.fecha)).slice(0,8);
+  document.getElementById('cal-upcoming').innerHTML=upcoming.map(e=>`
+    <div class="upcoming-item">
+      <div class="up-date">${fmtDate(e.fecha)}</div>
+      <div><div class="up-empresa">${e.empNombre||'—'}</div><div class="up-tipo">${histIcon(e.tipo)} ${e.tipo}${e.nota?' — '+e.nota:''}</div></div>
+    </div>`).join()||'<p style="font-size:12px;color:var(--text3);">Sin eventos próximos</p>';
+  updateBadges();
+}
+function changeMonth(dir){ calDate.setMonth(calDate.getMonth()+dir); renderCalendar(); }
+function selectDay(date){ document.getElementById('qe-fecha').value=date; }
+function focusQuickEvent(){ document.getElementById('qe-fecha').focus(); }
+function addQuickEvent(){
+  const empId=document.getElementById('qe-empresa').value;
+  const tipo=document.getElementById('qe-tipo').value;
+  const fecha=document.getElementById('qe-fecha').value;
+  const nota=document.getElementById('qe-nota').value;
+  if(!fecha){ showToast('Selecciona una fecha','error'); return; }
+  const d=BASE_DATA.find(x=>x.id==empId);
+  eventos.push({id:Date.now(),empresaId:empId,empNombre:d?d.alias||d.empresa:'',tipo,fecha,nota});
+  document.getElementById('qe-nota').value='';
+  saveLocal(); renderCalendar();
+  showToast('📅 Evento agregado','success');
+}
+
+// ================================================================
+// ACTIVIDADES
+// ================================================================
+function renderActividades(){
+  const tipo=document.getElementById('fa-tipo').value;
+  const emp=document.getElementById('fa-empresa').value;
+  let acts=[...actividades].reverse().filter(a=>{
+    if(tipo && a.tipo!==tipo) return false;
+    if(emp && a.empresaId!=emp) return false;
+    return true;
+  });
+  const el=document.getElementById('actividades-list');
+  el.innerHTML=acts.length?acts.map(a=>`
+    <div class="hist-item ${a.tipo}" style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+        <div class="hist-type" style="color:${histColor(a.tipo)}">${histIcon(a.tipo)} ${a.tipo.toUpperCase()}</div>
+        <div style="font-size:11px;color:var(--accent);font-weight:600">${a.empresa||'—'}</div>
+      </div>
+      <div class="hist-text">${a.texto}</div>
+      <div class="hist-date">${fmtDate(a.fecha)} ${a.hora||''}</div>
+    </div>`).join(''):'<div class="empty-state"><div class="ei">⚡</div><p>Sin actividades registradas</p></div>';
+}
+
+// ================================================================
+// REPORTES
+// ================================================================
+function renderReportes(){
+  const estadosC=countByEstado(), sectorC=countBySector();
+  const servC={};
+  BASE_DATA.forEach(d=>{ (gc(d.id).servicios||[]).forEach(s=>{ servC[s]=(servC[s]||0)+1; }); });
+  const deptoC={};
+  BASE_DATA.forEach(d=>{ const dep=(gc(d.id).depto||d.depto||''); if(dep) deptoC[dep]=(deptoC[dep]||0)+1; });
+  renderBarChart('rep-estados',estadosC,Object.keys(ESTADO_LABELS).filter(k=>estadosC[k]));
+  renderBarChart('rep-sectores',sectorC,Object.keys(sectorC));
+  renderBarChart('rep-servicios',servC,Object.keys(servC).sort((a,b)=>servC[b]-servC[a]));
+  renderBarChart('rep-deptos',deptoC,Object.keys(deptoC).sort((a,b)=>deptoC[b]-deptoC[a]).slice(0,8));
+  const acts=[...actividades].reverse().slice(0,15);
+  document.getElementById('rep-actividad').innerHTML=acts.length?acts.map(a=>`
+    <div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);">
+      <span style="color:${histColor(a.tipo)};font-size:13px">${histIcon(a.tipo)}</span>
+      <div><div style="font-size:12px;font-weight:600">${a.empresa}</div><div style="font-size:11px;color:var(--text3)">${a.texto} · ${fmtDate(a.fecha)}</div></div>
+    </div>`).join(''):'<p style="color:var(--text3);font-size:12px;">Sin actividades</p>';
+}
+
+// ================================================================
+// UTILS
+// ================================================================
+function fmtDate(d){ if(!d) return '—'; const[y,m,dd]=d.split('-'); const ms=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']; return `${dd}/${ms[parseInt(m)-1]}/${y}`; }
+function histIcon(t){ return {llamada:'📞',visita:'🚁',propuesta:'📄',reunion:'🤝',seguimiento:'📧',nota:'📝'}[t]||'📌'; }
+function histColor(t){ return {llamada:'var(--accent)',visita:'var(--green)',propuesta:'var(--yellow)',reunion:'var(--purple)',seguimiento:'var(--orange)',nota:'var(--text3)'}[t]||'var(--text2)'; }
+function updateBadges(){
+  document.getElementById('badge-total').textContent=BASE_DATA.length;
+  const today=new Date().toISOString().split('T')[0];
+  document.getElementById('badge-cal').textContent=eventos.filter(e=>e.fecha>=today).length;
+}
+function showToast(msg,type='info'){ const t=document.getElementById('toast'); t.textContent=msg; t.className='show '+type; setTimeout(()=>{ t.className=''; },3000); }
+function exportCSV(){
+  const hdr=['ID','Empresa','Alias','Sector','Proyecto','Capacidad','Contacto','Cargo','Tel','WhatsApp','Email','Email2','Ciudad','Depto','Estado','Prioridad','Canal','FechaVisita','Valor','Prob','Servicios','Notas'];
+  const rows=BASE_DATA.map(d=>{ const c=gc(d.id); return [d.id,d.empresa,d.alias,d.sector,d.proyecto,d.capacidad,c.contacto,c.cargo,c.tel||d.telBase,c.whatsapp,c.email||d.emailBase,c.email2,c.ciudad||d.ciudad,c.depto||d.depto,c.estado||'pendiente',c.prioridad||d.prioridad,c.canal,c.fechaVisita,c.valor||0,c.prob||0,(c.servicios||[]).join(';'),c.notas]; });
+  const csv=[hdr,...rows].map(r=>r.map(c=>'"'+(c||'').toString().replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv); a.download='AeroScan360-CRM-'+new Date().toISOString().split('T')[0]+'.csv'; a.click();
+  showToast('⬇ CSV exportado','success');
+}
+
+// ================================================================
+// START
+// ================================================================
+init();
+</script>
+</body>
+</html>
