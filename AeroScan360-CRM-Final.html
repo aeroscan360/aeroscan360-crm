@@ -1063,10 +1063,9 @@ function countBySector(){
   return c;
 }
 function countByPais(){
-  const c={};
-  BASE_DATA.forEach(d=>{ const p=getPais(d); c[p]=(c[p]||0)+1; });
-  return c;
+  return {'Honduras': BASE_DATA.length};
 }
+function getPais(d){ return d.pais||'Honduras'; }
 
 function renderBarChart(id,data,order){
   const el=document.getElementById(id);
@@ -1090,12 +1089,12 @@ function renderTable(){
   const fp=document.getElementById('f-prio').value;
   const fserv=document.getElementById('f-servicio').value;
   let list=BASE_DATA.filter(d=>{
-    if(fpais && getPais(d)!==fpais) return false;
+    if(fpais && (d.pais||'Honduras')!==fpais) return false;
     if(fs && d.sector!==fs) return false;
     const c=gc(d.id);
     if(fe && (c.estado||'pendiente')!==fe) return false;
     const city=c.ciudad||d.ciudad||''; const dep=c.depto||d.depto||'';
-    const paisFlag = {Honduras:'🇭🇳',Guatemala:'🇬🇹','El Salvador':'🇸🇻',Nicaragua:'🇳🇮'}[getPais(d)]||'';
+    const paisFlag = '🇭🇳';
     if(fd && dep!==fd) return false;
     if(fp && (c.prioridad||d.prioridad)!=fp) return false;
     if(fserv && !(c.servicios||[]).includes(fserv)) return false;
