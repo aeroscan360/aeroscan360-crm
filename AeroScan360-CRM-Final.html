@@ -105,6 +105,7 @@ tr:hover td{background:rgba(255,255,255,.02);cursor:pointer;}
 .sec-termico{background:rgba(255,107,0,.15);color:#ff6b00;}
 .sec-multi{background:rgba(181,123,238,.15);color:#b57bee;}
 .sec-otro{background:rgba(139,147,165,.15);color:#8b93a5;}
+.sec-redes{background:rgba(0,150,255,.15);color:#0096ff;}
 
 /* ESTADO SELECT — igual al Colaborativo */
 .vs{display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid;cursor:pointer;font-family:inherit;outline:none;width:100%;min-width:130px;}
@@ -267,7 +268,7 @@ textarea.field-input{resize:vertical;min-height:72px;}
   <div class="nav-section">
     <div class="nav-label">Principal</div>
     <div class="nav-item active" onclick="showPage('dashboard',this)"><span class="icon">📊</span><span>Dashboard</span></div>
-    <div class="nav-item" onclick="showPage('prospectos',this)"><span class="icon">🏢</span><span>Prospectos</span><span class="nav-badge" id="badge-total">35</span></div>
+    <div class="nav-item" onclick="showPage('prospectos',this)"><span class="icon">🏢</span><span>Prospectos</span><span class="nav-badge" id="badge-total">85</span></div>
     <div class="nav-item" onclick="showPage('pipeline',this)"><span class="icon">📋</span><span>Pipeline</span></div>
     <div class="nav-item" onclick="showPage('calendario',this)"><span class="icon">📅</span><span>Calendario</span><span class="nav-badge yellow" id="badge-cal">0</span></div>
     <div class="nav-label">Gestión</div>
@@ -309,9 +310,10 @@ textarea.field-input{resize:vertical;min-height:72px;}
   <!-- DASHBOARD -->
   <div id="page-dashboard" class="page active">
     <div class="stats-grid" id="stats-grid"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:22px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:22px;">
       <div class="report-card"><div class="report-title">📊 Estado de Prospectos</div><div id="dash-estados"></div></div>
       <div class="report-card"><div class="report-title">⚡ Por Sector</div><div id="dash-sectores"></div></div>
+      <div class="report-card"><div class="report-title">🌎 Por País</div><div id="dash-paises"></div></div>
     </div>
     <div class="report-card"><div class="report-title">📅 Próximas Actividades</div><div id="dash-upcoming"></div></div>
   </div>
@@ -323,11 +325,19 @@ textarea.field-input{resize:vertical;min-height:72px;}
         <span class="search-icon">🔍</span>
         <input type="text" id="search" placeholder="Buscar empresa, contacto, ciudad..." oninput="renderTable()">
       </div>
+      <select class="filter" id="f-pais" onchange="renderTable()">
+        <option value="">Todos los países</option>
+        <option value="Honduras">🇭🇳 Honduras</option>
+        <option value="Guatemala">🇬🇹 Guatemala</option>
+        <option value="El Salvador">🇸🇻 El Salvador</option>
+        <option value="Nicaragua">🇳🇮 Nicaragua</option>
+      </select>
       <select class="filter" id="f-sector" onchange="renderTable()">
         <option value="">Todos los sectores</option>
         <option value="solar">☀️ Solar</option><option value="eolico">💨 Eólico</option>
         <option value="hidro">💧 Hidroeléctrico</option><option value="termico">🔥 Térmico</option>
         <option value="multi">⚡ Multi-sector</option>
+        <option value="redes">🔌 Redes/Distrib.</option>
       </select>
       <select class="filter" id="f-estado" onchange="renderTable()">
         <option value="">Todos los estados</option>
@@ -714,8 +724,9 @@ textarea.field-input{resize:vertical;min-height:72px;}
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxaV8c6pPH6aEuq3bEqBbq9vZwVzy2nAiaJ4PC46sO-VLeepCnSk6f5iLYi0BHp0vbTdw/exec';
 const SYNC_INTERVAL = 30000;
 
-const SECTOR_MAP = {solar:'☀️ Solar',eolico:'💨 Eólico',hidro:'💧 Hidroeléctrico',termico:'🔥 Térmico',multi:'⚡ Multi-sector',otro:'🏢 Otro'};
-const SECTOR_CSS = {solar:'sec-solar',eolico:'sec-eolico',hidro:'sec-hidro',termico:'sec-termico',multi:'sec-multi',otro:'sec-otro'};
+const SECTOR_MAP = {solar:'☀️ Solar',eolico:'💨 Eólico',hidro:'💧 Hidroeléctrico',termico:'🔥 Térmico',multi:'⚡ Multi-sector',redes:'🔌 Redes/Distrib.',otro:'🏢 Otro'};
+const PAIS_MAP = {'Honduras':'🇭🇳 Honduras','Guatemala':'🇬🇹 Guatemala','El Salvador':'🇸🇻 El Salvador','Nicaragua':'🇳🇮 Nicaragua'};
+const SECTOR_CSS = {solar:'sec-solar',eolico:'sec-eolico',hidro:'sec-hidro',termico:'sec-termico',multi:'sec-multi',redes:'sec-redes',otro:'sec-otro'};
 const ESTADO_LABELS = {pendiente:'⏳ Pendiente',prioritario:'🔴 Prioritario',programado:'📅 Programado',contactado:'📞 Contactado',propuesta:'📄 Propuesta',visitado:'✅ Visitado',negociando:'🤝 Negociando',ganado:'🏆 Ganado',perdido:'❌ Perdido',nodeseado:'🚫 No Deseado'};
 const SERV_MAP = {redes:'⚡ Redes Eléctricas',solar:'☀️ Plantas Solares',eolico:'💨 Parques Eólicos',fotogrametria:'🗺️ Fotogrametría',civil:'🏗️ Obras Civiles',agricola:'🌾 Agrícola',sar:'🔍 SAR'};
 
@@ -758,6 +769,61 @@ const BASE_DATA = [
   {id:33,empresa:'Empresa de Energía Eléctrica S.A.',alias:'ELCOSA',sector:'multi',proyecto:'',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'Tegucigalpa',depto:'Francisco Morazán',direccion:'',coords:'14.0818,-87.2068'},
   {id:34,empresa:'Laeisz Honduras S.A.',alias:'LAEISZ',sector:'multi',proyecto:'',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'San Pedro Sula',depto:'Cortés',direccion:'',coords:'15.5020,-88.0254'},
   {id:35,empresa:'Enetran S.A.',alias:'ENETRAN',sector:'multi',proyecto:'Transmisión',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'Tegucigalpa',depto:'Francisco Morazán',direccion:'',coords:'14.0818,-87.2068'},
+
+  // ── 🇭🇳 HONDURAS ADICIONALES ──────────────────────────────────────────
+  {id:36,empresa:'Energía Eólica de Honduras S.A. (Globeleq)',alias:'EEHSA-GLOBELEQ',pais:'Honduras',sector:'eolico',proyecto:'Parque Eólico Cerro de Hula – 126 MW',capacidad:'126 MW',emailBase:'',telBase:'',prioridad:3,ciudad:'Tegucigalpa',depto:'Francisco Morazán',direccion:'Cerro de Hula',coords:'14.0000,-87.1500'},
+  {id:37,empresa:'Terra Energía / Vientos de Electrotecnia',alias:'TERRA-VIENTOS',pais:'Honduras',sector:'eolico',proyecto:'Parque Eólico San Marcos de Colón – 50 MW',capacidad:'50 MW',emailBase:'',telBase:'',prioridad:3,ciudad:'San Marcos de Colón',depto:'Choluteca',direccion:'',coords:'13.4375,-86.8154'},
+  {id:38,empresa:'San Marcos Wind Energy',alias:'SMWE',pais:'Honduras',sector:'eolico',proyecto:'Proyecto Eólico San Marcos – 112.5 MW',capacidad:'112.5 MW',emailBase:'',telBase:'',prioridad:3,ciudad:'San Marcos de Colón',depto:'Choluteca',direccion:'',coords:'13.4375,-86.8154'},
+  {id:39,empresa:'CMI – Corporación Multi Inversiones',alias:'CMI',pais:'Honduras',sector:'eolico',proyecto:'Operador Parque Cerro de Hula – 126 MW',capacidad:'126 MW',emailBase:'',telBase:'',prioridad:3,ciudad:'Tegucigalpa',depto:'Francisco Morazán',direccion:'',coords:'14.0818,-87.2068'},
+  {id:40,empresa:'Mecanismos de Energía Renovable S.A.',alias:'MESER',pais:'Honduras',sector:'eolico',proyecto:'Proyectos eólicos y solares con ENEE',capacidad:'N/D',emailBase:'',telBase:'',prioridad:3,ciudad:'Tegucigalpa',depto:'Francisco Morazán',direccion:'',coords:'14.0818,-87.2068'},
+  {id:41,empresa:'Energy Honduras S.A.',alias:'ENERGY-HN',pais:'Honduras',sector:'solar',proyecto:'Proyecto renovable solar – 10-15 MW',capacidad:'15 MW',emailBase:'',telBase:'',prioridad:2,ciudad:'',depto:'',direccion:'',coords:''},
+  {id:42,empresa:'Solaris HN (Sistemas Solares de Honduras S.A.)',alias:'SOLARIS-HN',pais:'Honduras',sector:'solar',proyecto:'Proyectos residenciales, comerciales e industriales',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'Tegucigalpa',depto:'Francisco Morazán',direccion:'',coords:'14.0818,-87.2068'},
+  {id:43,empresa:'Electrisol Honduras',alias:'ELECTRISOL',pais:'Honduras',sector:'solar',proyecto:'Instalaciones fotovoltaicas +20 años',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'',depto:'',direccion:'',coords:''},
+  {id:44,empresa:'SOLUZ Honduras',alias:'SOLUZ',pais:'Honduras',sector:'solar',proyecto:'Tecnología FV residencial e industrial',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'Tegucigalpa',depto:'Francisco Morazán',direccion:'3a Av. 10 Calle S.O.',coords:'14.0818,-87.2068'},
+  {id:45,empresa:'Sielsol – Sistemas Eléctricos Solares',alias:'SIELSOL',pais:'Honduras',sector:'solar',proyecto:'Kits solares, zonas rurales y urbanas',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'',depto:'',direccion:'',coords:''},
+  {id:46,empresa:'SAECSA Honduras',alias:'SAECSA',pais:'Honduras',sector:'solar',proyecto:'Luminarias solares y sistemas FV',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'',depto:'',direccion:'',coords:''},
+  {id:47,empresa:'Nova Energy Solutions',alias:'NOVA-ENERGY',pais:'Honduras',sector:'solar',proyecto:'Ingeniería y construcción FV – parques industriales ZIPs',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'',depto:'Honduras',direccion:'',coords:''},
+  {id:48,empresa:'Tecknos Solar',alias:'TECKNOS',pais:'Honduras',sector:'solar',proyecto:'Proyectos llave en mano – 18 departamentos',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'',depto:'',direccion:'',coords:''},
+  {id:49,empresa:'ENEE – Empresa Nacional de Energía Eléctrica',alias:'ENEE',pais:'Honduras',sector:'redes',proyecto:'Transmisión y distribución eléctrica nacional',capacidad:'N/D',emailBase:'',telBase:'2235-2560',prioridad:3,ciudad:'Tegucigalpa',depto:'Francisco Morazán',direccion:'',coords:'14.0818,-87.2068'},
+  {id:50,empresa:'Compañía Azucarera Tres Valles (CATV)',alias:'CATV',pais:'Honduras',sector:'termico',proyecto:'Cogeneración azucarera – 9.5-11.1 MW',capacidad:'11.1 MW',emailBase:'',telBase:'',prioridad:2,ciudad:'',depto:'Valle',direccion:'',coords:''},
+  // ── 🇬🇹 GUATEMALA ─────────────────────────────────────────────────────
+  {id:51,empresa:'IELOU Energy S.A.',alias:'IELOU',pais:'Guatemala',sector:'solar',proyecto:'Parque Solar Fénix I (4.8 MW) y Fénix 2 (4.8 MW)',capacidad:'9.6 MW',emailBase:'',telBase:'',prioridad:3,ciudad:'Escuintla',depto:'Escuintla',direccion:'',coords:'14.2994,-90.7879'},
+  {id:52,empresa:'PROGRESOL S.A.',alias:'PROGRESOL',pais:'Guatemala',sector:'solar',proyecto:'Parque Solar Progresol – 4.2 MW, Sanarate',capacidad:'4.2 MW',emailBase:'',telBase:'',prioridad:2,ciudad:'Sanarate',depto:'El Progreso',direccion:'',coords:'14.7923,-90.1870'},
+  {id:53,empresa:'PS Los Nogales S.A.',alias:'LOS NOGALES',pais:'Guatemala',sector:'solar',proyecto:'Parque Los Nogales – 4.16 MW, Gualán, Zacapa',capacidad:'4.16 MW',emailBase:'',telBase:'',prioridad:2,ciudad:'Gualán',depto:'Zacapa',direccion:'',coords:'15.1122,-89.3619'},
+  {id:54,empresa:'Energía e Inversiones de Guatemala S.A.',alias:'ENERGYGT',pais:'Guatemala',sector:'solar',proyecto:'Energía Verde El Rosario – Moyuta, Jutiapa',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'Moyuta',depto:'Jutiapa',direccion:'',coords:'14.0333,-90.0833'},
+  {id:55,empresa:'Gravitas Sun Harvest',alias:'GRAVITAS',pais:'Guatemala',sector:'solar',proyecto:'Planta Fotovoltaica Gravitas 1 – 5 MW, DEORSA',capacidad:'5 MW',emailBase:'',telBase:'',prioridad:2,ciudad:'',depto:'Oriente',direccion:'',coords:'14.6416,-89.5225'},
+  {id:56,empresa:'Tikal Energy',alias:'TIKAL-ENERGY',pais:'Guatemala',sector:'solar',proyecto:'Dos proyectos fotovoltaicos GDR autorizados',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'Ciudad de Guatemala',depto:'Guatemala',direccion:'',coords:'14.6349,-90.5069'},
+  {id:57,empresa:'Medax Energy S.A.',alias:'MEDAX',pais:'Guatemala',sector:'solar',proyecto:'Central generadora solar fotovoltaica activa',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'',depto:'Santa Rosa',direccion:'',coords:'14.2167,-90.2833'},
+  {id:58,empresa:'EOS Power Guatemala',alias:'EOS-GT',pais:'Guatemala',sector:'solar',proyecto:'Mayor instalador de paneles solares en Guatemala',capacidad:'N/D',emailBase:'',telBase:'',prioridad:3,ciudad:'Ciudad de Guatemala',depto:'Guatemala',direccion:'',coords:'14.6349,-90.5069'},
+  {id:59,empresa:'SADEESA – Sistemas de Apoyo de Energía Eléctrica S.A.',alias:'SADEESA',pais:'Guatemala',sector:'solar',proyecto:'Pionera solar desde 1982 – residencial e industrial',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'Ciudad de Guatemala',depto:'Guatemala',direccion:'',coords:'14.6349,-90.5069'},
+  {id:60,empresa:'AISA Solar Guatemala',alias:'AISA',pais:'Guatemala',sector:'solar',proyecto:'+3,450 proyectos solares concluidos',capacidad:'N/D',emailBase:'',telBase:'',prioridad:3,ciudad:'Ciudad de Guatemala',depto:'Guatemala',direccion:'',coords:'14.6349,-90.5069'},
+  {id:61,empresa:'Enertiva Guatemala',alias:'ENERTIVA-GT',pais:'Guatemala',sector:'solar',proyecto:'Proyectos corporativos (Kimberly Clark, etc.)',capacidad:'N/D',emailBase:'',telBase:'',prioridad:3,ciudad:'Ciudad de Guatemala',depto:'Guatemala',direccion:'',coords:'14.6349,-90.5069'},
+  {id:62,empresa:'EEGSA – Empresa Eléctrica de Guatemala S.A.',alias:'EEGSA',pais:'Guatemala',sector:'redes',proyecto:'Mayor distribuidora – filial Grupo EPM Colombia',capacidad:'N/D',emailBase:'',telBase:'',prioridad:3,ciudad:'Ciudad de Guatemala',depto:'Guatemala',direccion:'eegsa.com',coords:'14.6349,-90.5069'},
+  {id:63,empresa:'ENERGUATE (DEOCSA / DEORSA)',alias:'ENERGUATE',pais:'Guatemala',sector:'redes',proyecto:'Distribución en 20 departamentos (IC Power)',capacidad:'N/D',emailBase:'',telBase:'',prioridad:3,ciudad:'',depto:'Nacional',direccion:'energuate.com',coords:'15.7835,-90.2308'},
+  {id:64,empresa:'TRECSA – Transportista Eléctrica Centroamericana',alias:'TRECSA',pais:'Guatemala',sector:'redes',proyecto:'Empresa de transporte / transmisión eléctrica',capacidad:'N/D',emailBase:'',telBase:'',prioridad:3,ciudad:'Ciudad de Guatemala',depto:'Guatemala',direccion:'trecsa.com.gt',coords:'14.6349,-90.5069'},
+  {id:65,empresa:'Jaguar Energy Guatemala',alias:'JAGUAR-ENERGY',pais:'Guatemala',sector:'termico',proyecto:'Generación termoeléctrica de gran escala',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'Puerto Quetzal',depto:'Escuintla',direccion:'',coords:'13.9230,-90.8010'},
+  // ── 🇸🇻 EL SALVADOR ───────────────────────────────────────────────────
+  {id:66,empresa:'AES El Salvador – Proyecto Bósforo',alias:'AES-BOSFORO',pais:'El Salvador',sector:'solar',proyecto:'10 plantas solares x 10 MW = 100 MW total',capacidad:'100 MW',emailBase:'',telBase:'',prioridad:3,ciudad:'San Salvador',depto:'San Salvador',direccion:'aes.com',coords:'13.6929,-89.2182'},
+  {id:67,empresa:'Neoen El Salvador',alias:'NEOEN-SV',pais:'El Salvador',sector:'solar',proyecto:'Capella Solar – 140 MW (~285 M USD)',capacidad:'140 MW',emailBase:'',telBase:'',prioridad:3,ciudad:'El Salvador',depto:'',direccion:'neoen.com',coords:'13.6929,-89.2182'},
+  {id:68,empresa:'Energía del Pacífico (Invenergy)',alias:'ENERGIA-PACIFICO',pais:'El Salvador',sector:'solar',proyecto:'Energía limpia solar y eólica',capacidad:'N/D',emailBase:'',telBase:'',prioridad:3,ciudad:'El Salvador',depto:'',direccion:'energiadelpacifico.com',coords:'13.6929,-89.2182'},
+  {id:69,empresa:'Soluciones Energéticas Integradas S.A.',alias:'SOLENER-SV',pais:'El Salvador',sector:'solar',proyecto:'Proyectos de energía solar integrados',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'San Salvador',depto:'San Salvador',direccion:'solener.com.sv',coords:'13.6929,-89.2182'},
+  {id:70,empresa:'ECAMI S.A.',alias:'ECAMI',pais:'El Salvador',sector:'solar',proyecto:'40 años en solar FV y térmica centroamericana',capacidad:'N/D',emailBase:'',telBase:'',prioridad:3,ciudad:'',depto:'',direccion:'ecami.com.ni',coords:'13.6929,-89.2182'},
+  {id:71,empresa:'TECNOSOL El Salvador',alias:'TECNOSOL-SV',pais:'El Salvador',sector:'solar',proyecto:'Instalación y mantenimiento fotovoltaico',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'El Salvador',depto:'',direccion:'tecnosol.com.ni',coords:'13.6929,-89.2182'},
+  {id:72,empresa:'Enertiva El Salvador',alias:'ENERTIVA-SV',pais:'El Salvador',sector:'solar',proyecto:'Proyectos solares industriales llave en mano',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'El Salvador',depto:'',direccion:'enertiva.com',coords:'13.6929,-89.2182'},
+  {id:73,empresa:'CEL – Comisión Ejecutiva del Río Lempa',alias:'CEL',pais:'El Salvador',sector:'hidro',proyecto:'Generación hidroeléctrica estatal – principal renovable',capacidad:'N/D',emailBase:'',telBase:'',prioridad:3,ciudad:'San Salvador',depto:'San Salvador',direccion:'cel.gob.sv',coords:'13.6929,-89.2182'},
+  {id:74,empresa:'AES CAESS – Compañía de Alumbrado Eléctrico de San Salvador',alias:'AES-CAESS',pais:'El Salvador',sector:'redes',proyecto:'Distribuidora principal zona central',capacidad:'N/D',emailBase:'',telBase:'',prioridad:3,ciudad:'San Salvador',depto:'San Salvador',direccion:'29 Av. Norte y Calle El Bambú',coords:'13.6929,-89.2182'},
+  {id:75,empresa:'Cutuco Energy Central America',alias:'CUTUCO',pais:'El Salvador',sector:'termico',proyecto:'Generación a gas natural – 355 MW / 525 MW',capacidad:'525 MW',emailBase:'',telBase:'',prioridad:3,ciudad:'El Salvador',depto:'',direccion:'',coords:'13.3353,-87.8490'},
+  // ── 🇳🇮 NICARAGUA ─────────────────────────────────────────────────────
+  {id:76,empresa:'Consorcio Eólico AMAYO I y II (IC Power / Inkia)',alias:'AMAYO',pais:'Nicaragua',sector:'eolico',proyecto:'63 MW – 30 aerogeneradores Suzlon, Istmo de Rivas',capacidad:'63 MW',emailBase:'',telBase:'',prioridad:3,ciudad:'Rivas',depto:'Rivas',direccion:'Km 114.8 Carretera Panamericana Sur',coords:'11.4379,-85.8377'},
+  {id:77,empresa:'Blue Power & Energy S.A. (Grupo Terra)',alias:'BLUE-POWER',pais:'Nicaragua',sector:'eolico',proyecto:'Parque La Fe San Martín – 39.9 MW, 22 aerogeneradores Vestas',capacidad:'39.9 MW',emailBase:'',telBase:'',prioridad:3,ciudad:'Rivas',depto:'Rivas',direccion:'',coords:'11.4379,-85.8377'},
+  {id:78,empresa:'Eolo de Nicaragua (Globeleq Mesoamerica Energy)',alias:'EOLO-NI',pais:'Nicaragua',sector:'eolico',proyecto:'44 MW – 22 aerogeneradores Gamesa',capacidad:'44 MW',emailBase:'',telBase:'',prioridad:3,ciudad:'Rivas',depto:'Rivas',direccion:'',coords:'11.4379,-85.8377'},
+  {id:79,empresa:'Alba Vientos / Albanisa',alias:'ALBA-VIENTOS',pais:'Nicaragua',sector:'eolico',proyecto:'Parque eólico ~44 MW – 22 aerogeneradores Vestas',capacidad:'44 MW',emailBase:'',telBase:'',prioridad:2,ciudad:'Rivas',depto:'Rivas',direccion:'',coords:'11.4379,-85.8377'},
+  {id:80,empresa:'ENACAL + Cooperación China',alias:'ENACAL-SOLAR',pais:'Nicaragua',sector:'solar',proyecto:'Planta Solar San Isidro, Matagalpa – 61.4 MW',capacidad:'61.4 MW',emailBase:'',telBase:'',prioridad:3,ciudad:'San Isidro',depto:'Matagalpa',direccion:'',coords:'12.9154,-86.1975'},
+  {id:81,empresa:'ECAMI S.A. Nicaragua',alias:'ECAMI-NI',pais:'Nicaragua',sector:'solar',proyecto:'40 años en energía solar FV y térmica en Centroamérica',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'',depto:'',direccion:'ecami.com.ni',coords:'12.1149,-86.2362'},
+  {id:82,empresa:'TECNOSOL Nicaragua',alias:'TECNOSOL-NI',pais:'Nicaragua',sector:'solar',proyecto:'Instalaciones urbanas y rurales – +40 MW instalados',capacidad:'+40 MW',emailBase:'',telBase:'',prioridad:3,ciudad:'Managua',depto:'Managua',direccion:'tecnosol.com.ni',coords:'12.1149,-86.2362'},
+  {id:83,empresa:'ENATREL – Empresa Nacional de Transmisión Eléctrica',alias:'ENATREL',pais:'Nicaragua',sector:'redes',proyecto:'100% de la transmisión eléctrica de Nicaragua + plantas solares',capacidad:'N/D',emailBase:'',telBase:'',prioridad:3,ciudad:'Managua',depto:'Managua',direccion:'enatrel.gob.ni',coords:'12.1149,-86.2362'},
+  {id:84,empresa:'DISNORTE-DISSUR (TSK / Estado)',alias:'DISNORTE',pais:'Nicaragua',sector:'redes',proyecto:'95% distribución del país – consorcio español-estatal',capacidad:'N/D',emailBase:'',telBase:'',prioridad:3,ciudad:'Managua',depto:'Managua',direccion:'disnorte-dissur.com.ni',coords:'12.1149,-86.2362'},
+  {id:85,empresa:'HIDROGESA',alias:'HIDROGESA',pais:'Nicaragua',sector:'hidro',proyecto:'Generación hidroeléctrica estatal',capacidad:'N/D',emailBase:'',telBase:'',prioridad:2,ciudad:'Managua',depto:'Managua',direccion:'',coords:'12.1149,-86.2362'},
 ];
 
 // ================================================================
@@ -975,6 +1041,8 @@ function renderDashboard(){
   renderBarChart('dash-estados',estados,Object.keys(ESTADO_LABELS).filter(k=>estados[k]));
   const sectorC=countBySector();
   renderBarChart('dash-sectores',sectorC,Object.keys(sectorC));
+  const paisC=countByPais();
+  renderBarChart('dash-paises',paisC,Object.keys(paisC));
   // Upcoming
   const upcoming=eventos.filter(e=>e.fecha>=hoy).sort((a,b)=>a.fecha.localeCompare(b.fecha)).slice(0,6);
   const ul=document.getElementById('dash-upcoming');
@@ -994,6 +1062,11 @@ function countBySector(){
   BASE_DATA.forEach(d=>{ c[d.sector]=(c[d.sector]||0)+1; });
   return c;
 }
+function countByPais(){
+  const c={};
+  BASE_DATA.forEach(d=>{ const p=getPais(d); c[p]=(c[p]||0)+1; });
+  return c;
+}
 
 function renderBarChart(id,data,order){
   const el=document.getElementById(id);
@@ -1010,16 +1083,19 @@ function renderBarChart(id,data,order){
 // ================================================================
 function renderTable(){
   const q=document.getElementById('search').value.toLowerCase();
+  const fpais=document.getElementById('f-pais').value;
   const fs=document.getElementById('f-sector').value;
   const fe=document.getElementById('f-estado').value;
   const fd=document.getElementById('f-depto').value;
   const fp=document.getElementById('f-prio').value;
   const fserv=document.getElementById('f-servicio').value;
   let list=BASE_DATA.filter(d=>{
+    if(fpais && getPais(d)!==fpais) return false;
     if(fs && d.sector!==fs) return false;
     const c=gc(d.id);
     if(fe && (c.estado||'pendiente')!==fe) return false;
     const city=c.ciudad||d.ciudad||''; const dep=c.depto||d.depto||'';
+    const paisFlag = {Honduras:'🇭🇳',Guatemala:'🇬🇹','El Salvador':'🇸🇻',Nicaragua:'🇳🇮'}[getPais(d)]||'';
     if(fd && dep!==fd) return false;
     if(fp && (c.prioridad||d.prioridad)!=fp) return false;
     if(fserv && !(c.servicios||[]).includes(fserv)) return false;
@@ -1044,7 +1120,7 @@ function renderTable(){
     const prox=c.fechaVisita||'';
     return `<tr onclick="openPanel(${d.id})">
       <td style="color:var(--text3);font-size:10px;font-family:'JetBrains Mono',monospace;">${d.id}</td>
-      <td><div class="empresa-name">${d.empresa.length>38?d.empresa.slice(0,37)+'…':d.empresa}</div><div class="empresa-alias">${d.alias}</div></td>
+      <td><div class="empresa-name">${paisFlag} ${d.empresa.length>36?d.empresa.slice(0,35)+'…':d.empresa}</div><div class="empresa-alias">${d.alias}</div></td>
       <td><span class="sector-badge ${SECTOR_CSS[d.sector]||'sec-otro'}">${SECTOR_MAP[d.sector]||d.sector}</span></td>
       <td>
         ${email?`<div style="font-size:10px;color:var(--accent)">✉ ${email}</div>`:''}
