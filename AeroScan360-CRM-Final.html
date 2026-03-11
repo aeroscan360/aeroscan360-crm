@@ -477,7 +477,10 @@ textarea.field-input{resize:vertical;min-height:72px;}
       <div class="panel-empresa" id="p-name">—</div>
       <div class="panel-alias" id="p-alias"></div>
     </div>
-    <button class="panel-close" onclick="closePanel()">✕</button>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <button onclick="confirmarEliminar()" style="background:rgba(255,68,68,.15);border:1px solid rgba(255,68,68,.3);color:#ff4444;width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;" title="Eliminar prospecto">🗑</button>
+      <button class="panel-close" onclick="closePanel()">✕</button>
+    </div>
   </div>
   <div class="panel-tabs">
     <div class="ptab active" onclick="switchTab('info',this)">ℹ️ Info</div>
@@ -716,6 +719,30 @@ textarea.field-input{resize:vertical;min-height:72px;}
 
 <!-- TOAST -->
 <div id="toast"></div>
+
+<!-- MODAL ELIMINAR -->
+<div class="modal-overlay" id="modal-eliminar">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <div class="modal-title">🗑 Eliminar Prospecto</div>
+      <button class="modal-close" onclick="document.getElementById('modal-eliminar').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:14px;color:var(--text2);margin-bottom:12px;">¿Estás seguro que deseas eliminar este prospecto?</p>
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:16px;">
+        <div style="font-size:14px;font-weight:700;" id="del-nombre">—</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px;" id="del-alias"></div>
+      </div>
+      <div style="background:rgba(255,68,68,.08);border:1px solid rgba(255,68,68,.2);border-radius:8px;padding:10px;">
+        <p style="font-size:12px;color:#ff6b6b;">⚠️ Esta acción no se puede deshacer. El prospecto se eliminará del CRM y de Google Sheets.</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="document.getElementById('modal-eliminar').classList.remove('open')">Cancelar</button>
+      <button class="btn" onclick="eliminarProspecto()" style="background:#ff4444;color:#fff;">🗑 Sí, Eliminar</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ================================================================
@@ -1512,6 +1539,40 @@ function exportCSV(){
   const csv=[hdr,...rows].map(r=>r.map(c=>'"'+(c||'').toString().replace(/"/g,'""')+'"').join(',')).join('\n');
   const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv); a.download='AeroScan360-CRM-'+new Date().toISOString().split('T')[0]+'.csv'; a.click();
   showToast('⬇ CSV exportado','success');
+}
+
+// ================================================================
+// ELIMINAR PROSPECTO
+// ================================================================
+function confirmarEliminar(){
+  if(!currentPanel) return;
+  const d = BASE_DATA.find(x=>x.id===currentPanel);
+  if(!d) return;
+  document.getElementById('del-nombre').textContent = d.empresa;
+  document.getElementById('del-alias').textContent = d.alias + ' · ' + (d.pais||'Honduras');
+  document.getElementById('modal-eliminar').classList.add('open');
+}
+
+async function eliminarProspecto(){
+  if(!currentPanel) return;
+  const id = currentPanel;
+  const idx = BASE_DATA.findIndex(x=>x.id===id);
+  if(idx === -1) return;
+  BASE_DATA.splice(idx, 1);
+  delete CRM[id];
+  actividades = actividades.filter(a=>a.empresaId!=id);
+  eventos = eventos.filter(e=>e.empresaId!=id);
+  try {
+    setSyncStatus('pending','Eliminando...');
+    await gasWrite(id+1, ['','','','','','','','','','','','','','','','','','','','','','','','','','']);
+    setSyncStatus('ok','✅ Eliminado de Google Sheets');
+  } catch(e){ setSyncStatus('error','⚠️ Error al eliminar en Sheets'); }
+  document.getElementById('modal-eliminar').classList.remove('open');
+  closePanel();
+  saveLocal();
+  populateEmpresaSelects();
+  renderAll();
+  showToast('🗑 Prospecto eliminado','success');
 }
 
 // ================================================================
