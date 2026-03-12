@@ -1512,7 +1512,7 @@ function renderHistorial(id){
 function renderTareas(id){
   const c=gc(id); const el=document.getElementById('tareas-list');
   if(!(c.tareas||[]).length){ el.innerHTML='<div class="empty-st"><div class="ei">✅</div><p>Sin tareas pendientes</p></div>'; return; }
-  el.innerHTML=c.tareas.map((t,i)=>`<div class="ti" onclick="toggleTarea(${i})"><div class="tck ${t.done?'done':''}">✓</div><div class="tt ${t.done?'done':''}">${t.texto}</div><div class="td">${fmtDate(t.fecha)}</div></div>`).join('');
+  el.innerHTML=c.tareas.map((t,i)=>`<div class="ti"><div class="tck ${t.done?'done':''}" onclick="toggleTarea(${i})">✓</div><div class="tt ${t.done?'done':''}" onclick="toggleTarea(${i})">${t.texto}</div><div class="td">${fmtDate(t.fecha)}</div><button onclick="borrarTarea(${i})" style="margin-left:8px;background:none;border:none;cursor:pointer;color:#ef4444;font-size:14px;padding:2px 6px;border-radius:4px;opacity:0.6;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6" title="Eliminar tarea">✕</button></div>`).join('');
 }
 
 function switchTab(name,el){
@@ -1561,6 +1561,7 @@ function addTarea(){
 }
 
 function toggleTarea(idx){ if(!currentPanel) return; const c=gc(currentPanel); c.tareas[idx].done=!c.tareas[idx].done; scheduleSave(currentPanel); saveLocal(); renderTareas(currentPanel); }
+function borrarTarea(idx){ if(!currentPanel) return; const c=gc(currentPanel); if(!c.tareas) return; c.tareas.splice(idx,1); scheduleSave(currentPanel); saveLocal(); renderTareas(currentPanel); showToast('🗑 Tarea eliminada','success'); }
 
 // ================================================================
 // MODAL NUEVO PROSPECTO
