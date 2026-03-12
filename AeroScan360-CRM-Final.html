@@ -1574,8 +1574,12 @@ async function saveNewProspecto(){
   const btn=document.querySelector('#modal-overlay .btn-primary');
   if(btn){ btn.disabled=true; btn.textContent='Guardando...'; }
 
-  // ID único basado en timestamp (no colisiona con originales 1-134)
-  const newId = Date.now();
+  // ID secuencial: siguiente número después del máximo actual
+  const maxId = BASE_DATA.reduce((max, d) => {
+    const n = typeof d.id === 'number' ? d.id : 0;
+    return (n < 100000 && n > max) ? n : max; // solo IDs numéricos pequeños (no timestamps viejos)
+  }, 134);
+  const newId = maxId + 1;
   const servicios=[...document.querySelectorAll('#m-servicios .tag.sel')].map(el=>el.dataset.v);
   const newData={
     id:newId, empresa:emp,
