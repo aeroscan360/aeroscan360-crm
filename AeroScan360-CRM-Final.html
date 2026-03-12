@@ -472,12 +472,58 @@ textarea.fi{resize:vertical;min-height:70px;}
 
   <!-- ACTIVIDADES -->
   <div id="page-actividades" class="page">
-    <div class="filters-bar">
+    <!-- FORMULARIO NUEVA ACTIVIDAD -->
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:18px;box-shadow:0 1px 4px rgba(0,0,0,.06);">
+      <div style="font-size:13px;font-weight:700;color:var(--text1);margin-bottom:12px;">➕ Nueva Actividad / Recordatorio</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div>
+          <div class="fl" style="margin-bottom:4px;">Empresa (opcional)</div>
+          <select class="psel" id="na-empresa"><option value="">— Recordatorio general —</option></select>
+        </div>
+        <div>
+          <div class="fl" style="margin-bottom:4px;">Tipo</div>
+          <select class="psel" id="na-tipo">
+            <option value="llamada">📞 Llamada</option>
+            <option value="visita">🚁 Visita</option>
+            <option value="propuesta">📄 Propuesta</option>
+            <option value="reunion">🤝 Reunión</option>
+            <option value="seguimiento">📧 Seguimiento</option>
+            <option value="nota">📝 Nota / Recordatorio</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-bottom:10px;">
+        <div class="fl" style="margin-bottom:4px;">Descripción</div>
+        <textarea class="fi" id="na-texto" rows="2" placeholder="¿Qué hay que hacer o qué ocurrió?"></textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;">
+        <div>
+          <div class="fl" style="margin-bottom:4px;">Fecha</div>
+          <input type="date" class="fi" id="na-fecha">
+        </div>
+        <div>
+          <div class="fl" style="margin-bottom:4px;">Hora</div>
+          <input type="time" class="fi" id="na-hora">
+        </div>
+        <div style="display:flex;align-items:flex-end;padding-bottom:2px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;">
+            <input type="checkbox" id="na-calendario" checked style="width:15px;height:15px;accent-color:var(--accent);">
+            <span>📅 Agregar al Calendario</span>
+          </label>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;" onclick="agregarActividad()">⚡ Registrar Actividad</button>
+    </div>
+    <!-- FILTROS -->
+    <div class="filters-bar" style="margin-bottom:12px;">
       <select class="fil" id="fa-tipo" onchange="renderActividades()">
         <option value="">Todos los tipos</option>
-        <option value="llamada">📞 Llamada</option><option value="visita">🚁 Visita</option>
-        <option value="propuesta">📄 Propuesta</option><option value="reunion">🤝 Reunión</option>
-        <option value="seguimiento">📧 Seguimiento</option><option value="nota">📝 Nota</option>
+        <option value="llamada">📞 Llamada</option>
+        <option value="visita">🚁 Visita</option>
+        <option value="propuesta">📄 Propuesta</option>
+        <option value="reunion">🤝 Reunión</option>
+        <option value="seguimiento">📧 Seguimiento</option>
+        <option value="nota">📝 Nota</option>
       </select>
       <select class="fil" id="fa-empresa" onchange="renderActividades()"><option value="">Todas las empresas</option></select>
     </div>
@@ -1295,6 +1341,7 @@ function init(){
   deptos.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;sel.appendChild(o);});
   const today=new Date().toISOString().split('T')[0];
   document.getElementById('qe-fecha').value=today;
+  const naFecha=document.getElementById('na-fecha'); if(naFecha) naFecha.value=today;
   document.getElementById('h-fecha').value=today;
   document.getElementById('t-fecha').value=today;
   // Mostrar datos del caché local MIENTRAS carga desde Sheets (mejor UX)
@@ -1319,10 +1366,12 @@ function saveLocal(){
 }
 
 function populateEmpresaSelects(){
-  ['qe-empresa','fa-empresa'].forEach(id=>{
+  ['qe-empresa','fa-empresa','na-empresa'].forEach(id=>{
     const sel=document.getElementById(id);
     const isFilter=id.startsWith('fa');
+    const isOptional=id.startsWith('na');
     if(isFilter) sel.innerHTML='<option value="">Todas las empresas</option>';
+    else if(isOptional) sel.innerHTML='<option value="">— Recordatorio general —</option>';
     else sel.innerHTML='';
     BASE_DATA.forEach(d=>{const o=document.createElement('option');o.value=d.id;o.textContent=(PAIS_FLAG[d.pais]||'🌎')+' '+d.alias;sel.appendChild(o);});
   });
@@ -1792,10 +1841,59 @@ function addQuickEvent(){
 // ACTIVIDADES
 // ================================================================
 function renderActividades(){
-  const tipo=document.getElementById('fa-tipo').value;
-  const emp=document.getElementById('fa-empresa').value;
+  const tipo=document.getElementById('fa-tipo')?.value||'';
+  const emp=document.getElementById('fa-empresa')?.value||'';
   let acts=[...actividades].reverse().filter(a=>{ if(tipo && a.tipo!==tipo) return false; if(emp && a.empresaId!=emp) return false; return true; });
-  document.getElementById('actividades-list').innerHTML=acts.length?acts.map(a=>`<div class="hi ${a.tipo}" style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;margin-bottom:3px;"><div class="hi-type" style="color:${histColor(a.tipo)}">${histIcon(a.tipo)} ${a.tipo.toUpperCase()}</div><div style="font-size:11px;color:var(--accent);font-weight:700">${a.empresa||'—'}</div></div><div class="hi-text">${a.texto}</div><div class="hi-date">${fmtDate(a.fecha)} ${a.hora||''}</div></div>`).join(''):'<div class="empty-st"><div class="ei">⚡</div><p>Sin actividades registradas</p></div>';
+  document.getElementById('actividades-list').innerHTML=acts.length?acts.map(a=>`
+    <div class="hi ${a.tipo}" style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+      <div style="flex:1;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+          <div class="hi-type" style="color:${histColor(a.tipo)}">${histIcon(a.tipo)} ${a.tipo.toUpperCase()}</div>
+          <div style="font-size:11px;color:var(--accent);font-weight:700">${a.empresa||'<span style="color:var(--text3)">General</span>'}</div>
+        </div>
+        <div class="hi-text">${a.texto}</div>
+        <div class="hi-date">${fmtDate(a.fecha)}${a.hora?' · '+a.hora:''}</div>
+      </div>
+      <button onclick="borrarActividad('${a.id}')" style="background:none;border:none;cursor:pointer;color:#ef4444;font-size:13px;padding:2px 5px;border-radius:4px;opacity:0.5;flex-shrink:0;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.5" title="Eliminar">✕</button>
+    </div>`).join(''):'<div class="empty-st"><div class="ei">⚡</div><p>Sin actividades registradas</p></div>';
+}
+
+function borrarActividad(actId){
+  actividades=actividades.filter(a=>a.id!=actId);
+  // También borrar del calendario si existe
+  eventos=eventos.filter(e=>e.actId!=actId);
+  saveLocal(); renderActividades(); renderCalendar(); updateBadges();
+  showToast('🗑 Actividad eliminada','success');
+}
+
+function agregarActividad(){
+  const texto=document.getElementById('na-texto').value.trim();
+  if(!texto){ showToast('Escribe la descripción','error'); return; }
+  const tipo=document.getElementById('na-tipo').value;
+  const fecha=document.getElementById('na-fecha').value || new Date().toISOString().split('T')[0];
+  const hora=document.getElementById('na-hora').value;
+  const empId=document.getElementById('na-empresa').value;
+  const addCal=document.getElementById('na-calendario').checked;
+  const d=empId?BASE_DATA.find(x=>x.id==empId):null;
+  const empNombre=d?(PAIS_FLAG[d.pais]||'')+' '+(d.alias||d.empresa):'';
+  const actId='act_'+Date.now();
+  const act={id:actId, empresaId:empId?parseInt(empId):0, empresa:empNombre, tipo, texto, fecha, hora};
+  actividades.push(act);
+  // Guardar en Sheets
+  gasAppend(rowToArrAct(act),'Actividades').catch(()=>{});
+  // Agregar al calendario si está marcado
+  if(addCal){
+    const ev={id:'ev_'+Date.now(), actId, empresaId:empId?parseInt(empId):0, empNombre:empNombre||'Recordatorio', tipo, fecha, nota:texto};
+    eventos.push(ev);
+    showToast('⚡ Actividad registrada y agregada al 📅 Calendario','success');
+  } else {
+    showToast('⚡ Actividad registrada','success');
+  }
+  // Limpiar formulario
+  document.getElementById('na-texto').value='';
+  document.getElementById('na-hora').value='';
+  document.getElementById('na-empresa').value='';
+  saveLocal(); renderActividades(); renderCalendar(); updateBadges();
 }
 
 // ================================================================
