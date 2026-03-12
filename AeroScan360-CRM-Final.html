@@ -1034,6 +1034,17 @@ async function loadFromSheets(silent=false){
   try{
     setSyncStatus('pending', silent?'Actualizando...':'Cargando desde Sheets...');
 
+    // ── 0. CARGAR IDs ELIMINADOS ──
+    let DELETED_IDS = new Set();
+    try{
+      const resEl = await gasRead('Eliminados');
+      const rowsEl = resEl.data||[];
+      for(let i=1;i<rowsEl.length;i++){
+        const rid = parseInt(rowsEl[i][0]);
+        if(rid) DELETED_IDS.add(rid);
+      }
+    }catch(e0){ /* no existe aún, ok */ }
+
     // ── 1. CARGAR HOJA CRM ──
     const resCRM = await gasRead('CRM');
     const rowsCRM = resCRM.data||[];
@@ -1052,6 +1063,7 @@ async function loadFromSheets(silent=false){
       for(let i=1;i<rowsCRM.length;i++){
         const row=rowsCRM[i]; const id=parseInt(row[0]);
         if(!id||isNaN(id)) continue;
+        if(DELETED_IDS.has(id)) continue; // empresa eliminada
         CRM_ROW_MAP[id]=i+1; // fila real en la hoja (1-based)
         CRM[id]={
           estado:row[1]||'pendiente',contacto:row[2]||'',cargo:row[3]||'',tel:row[4]||'',
@@ -1106,7 +1118,12 @@ async function loadFromSheets(silent=false){
       }
     }catch(e3){ console.warn('Sin hoja Actividades aún:',e3); }
 
-    // ── 4. Asegurar que todas las empresas tienen CRM ──
+    // ── 4. Aplicar eliminados: quitar de BASE_DATA los que fueron borrados ──
+    DELETED_IDS.forEach(delId=>{
+      const idx=BASE_DATA.findIndex(x=>x.id===delId);
+      if(idx!==-1){ BASE_DATA.splice(idx,1); BASE_DATA_IDS.delete(delId); delete CRM[delId]; }
+    });
+    // Asegurar que todas las empresas activas tienen CRM
     BASE_DATA.forEach(d=>{ if(!CRM[d.id]) CRM[d.id]=defaultCRM(d.id); });
 
     // Guardar en localStorage como caché offline
@@ -1723,7 +1740,9 @@ async function eliminarProspecto(){
   eventos=eventos.filter(e=>e.empresaId!=id);
   try{
     setSyncStatus('pending','Eliminando...');
-    // Borrar fila en hoja CRM (limpiar la fila, no borrar — para no romper índices)
+    // 1. Registrar en hoja Eliminados (fuente de verdad para todos los usuarios)
+    await gasAppend([id, new Date().toISOString()], 'Eliminados');
+    // 2. Limpiar fila en hoja CRM
     if(CRM_ROW_MAP[id]){
       await gasWrite(CRM_ROW_MAP[id], Array(HDR_CRM.length).fill(''), 'CRM');
       delete CRM_ROW_MAP[id];
