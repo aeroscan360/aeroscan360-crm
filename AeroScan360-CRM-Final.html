@@ -764,7 +764,7 @@ textarea.fi{resize:vertical;min-height:70px;}
 // ================================================================
 // CONFIG
 // ================================================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxaV8c6pPH6aEuq3bEqBbq9vZwVzy2nAiaJ4PC46sO-VLeepCnSk6f5iLYi0BHp0vbTdw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzvF7hg51uAgyJcubkCz2JYGr5LhYfhF7Uo8s6qKHKDjezDsClDeQMw-Z8R76RUn9Q9gA/exec';
 const SYNC_INTERVAL = 30000;
 
 const SECTOR_MAP = {solar:'☀️ Solar',eolico:'💨 Eólico',hidro:'💧 Hidroeléctrico',termico:'🔥 Térmico/Biomasa',geo:'🌋 Geotérmico',multi:'⚡ Multi-sector',redes:'🔌 Redes/Distrib.',otro:'🏢 Otro'};
@@ -993,43 +993,177 @@ function defaultCRM(id){
 // ================================================================
 // GOOGLE SHEETS SYNC
 // ================================================================
-async function gasRead(){ const r=await fetch(`${SCRIPT_URL}?action=read`); if(!r.ok) throw new Error('Read '+r.status); return r.json(); }
-async function gasWrite(ri,row){ const r=await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'write',rowIndex:ri,row})}); if(!r.ok) throw new Error('Write '+r.status); return r.json(); }
-const HDR=['ID','Estado','Contacto','Cargo','Tel','WhatsApp','Email','Email2','Contacto2','Cargo2','Tel2','TelEstado','Canal','FechaVisita','HoraVisita','Notas','Historial','Tareas','Eventos','Valor','Prob','Cierre','Fuente','OpDesc','Servicios','Prioridad'];
+// ================================================================
+// GOOGLE SHEETS — FUENTE ÚNICA DE VERDAD
+// 3 hojas: "CRM" (datos por empresa), "Empresas" (custom), "Actividades"
+// ================================================================
+function safeJSON(s){ try{ return (s&&s!=='[]'&&s!=='')?JSON.parse(s):[]; }catch{ return []; } }
+
+async function gasCall(payload){
+  const r=await fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.json();
+}
+async function gasRead(sheet='CRM'){
+  const r=await fetch(`${SCRIPT_URL}?action=read&sheet=${encodeURIComponent(sheet)}`);
+  if(!r.ok) throw new Error('Read '+r.status);
+  return r.json();
+}
+async function gasWrite(ri,row,sheet='CRM'){
+  return gasCall({action:'write',sheet,rowIndex:ri,row});
+}
+async function gasAppend(row,sheet){
+  return gasCall({action:'append',sheet,row});
+}
+async function gasDeleteRow(ri,sheet='CRM'){
+  return gasCall({action:'deleteRow',sheet,rowIndex:ri});
+}
+
+const HDR_CRM=['ID','Estado','Contacto','Cargo','Tel','WhatsApp','Email','Email2','Contacto2','Cargo2','Tel2','TelEstado','Canal','FechaVisita','HoraVisita','Notas','Historial','Tareas','Actividades','Valor','Prob','Cierre','Fuente','OpDesc','Servicios','Prioridad'];
+const HDR_EMP=['ID','Empresa','Alias','Sector','Reg','Proyecto','Capacidad','EmailBase','TelBase','Prioridad','Ciudad','Depto','Pais','Coords'];
+const HDR_ACT=['ID','EmpresaID','Empresa','Tipo','Texto','Fecha','Hora'];
+
+function rowToArrCRM(id,c){ return [id,c.estado||'pendiente',c.contacto||'',c.cargo||'',c.tel||'',c.whatsapp||'',c.email||'',c.email2||'',c.contacto2||'',c.cargo2||'',c.tel2||'',c.telEstado||'',c.canal||'',c.fechaVisita||'',c.horaVisita||'',c.notas||'',JSON.stringify(c.historial||[]),JSON.stringify(c.tareas||[]),'',c.valor||0,c.prob||0,c.cierre||'',c.fuente||'',c.opDesc||'',JSON.stringify(c.servicios||[]),c.prioridad||2]; }
+function rowToArrEmp(d){ return [d.id,d.empresa,d.alias,d.sector,d.reg||'',d.proyecto||'',d.capacidad||'',d.emailBase||'',d.telBase||'',d.prioridad||2,d.ciudad||'',d.depto||'',d.pais||'Honduras',d.coords||'']; }
+function rowToArrAct(a){ return [a.id,a.empresaId,a.empresa||'',a.tipo||'nota',a.texto||'',a.fecha||'',a.hora||'']; }
+
+// Mapa de ID -> fila en hoja CRM (para writes exactos)
+let CRM_ROW_MAP = {}; // id -> rowIndex (1-based, fila 1 = header)
+let EMP_ROW_MAP = {}; // id -> rowIndex en hoja Empresas
 
 async function loadFromSheets(silent=false){
   try{
-    const res=await gasRead(); const rows=res.data||[];
-    if(rows.length<2){
-      if(!silent) setSyncStatus('ok','Inicializando hoja...');
-      await gasWrite(1,HDR);
-      for(let i=0;i<BASE_DATA.length;i++){const d=BASE_DATA[i];const c=defaultCRM(d.id);CRM[d.id]=c;await gasWrite(i+2,rowToArr(d.id,c));}
-      setSyncStatus('ok','✅ Hoja inicializada con '+BASE_DATA.length+' empresas');
-    } else {
-      for(let i=1;i<rows.length;i++){
-        const row=rows[i]; const id=parseInt(row[0]);
-        if(!id||isNaN(id)) continue;
-        CRM[id]={estado:row[1]||'pendiente',contacto:row[2]||'',cargo:row[3]||'',tel:row[4]||'',whatsapp:row[5]||'',email:row[6]||'',email2:row[7]||'',contacto2:row[8]||'',cargo2:row[9]||'',tel2:row[10]||'',telEstado:row[11]||'',canal:row[12]||'',fechaVisita:row[13]||'',horaVisita:row[14]||'',notas:row[15]||'',historial:safeJSON(row[16]),tareas:safeJSON(row[17]),valor:parseFloat(row[19])||0,prob:parseInt(row[20])||0,cierre:row[21]||'',fuente:row[22]||'',opDesc:row[23]||'',servicios:safeJSON(row[24]),prioridad:parseInt(row[25])||2};
+    setSyncStatus('pending', silent?'Actualizando...':'Cargando desde Sheets...');
+
+    // ── 1. CARGAR HOJA CRM ──
+    const resCRM = await gasRead('CRM');
+    const rowsCRM = resCRM.data||[];
+    if(rowsCRM.length < 2){
+      // Hoja vacía → inicializar headers y todas las empresas base
+      await gasWrite(1, HDR_CRM, 'CRM');
+      CRM_ROW_MAP = {};
+      for(let i=0;i<BASE_DATA.length;i++){
+        const d=BASE_DATA[i];
+        if(!CRM[d.id]) CRM[d.id]=defaultCRM(d.id);
+        await gasWrite(i+2, rowToArrCRM(d.id, CRM[d.id]), 'CRM');
+        CRM_ROW_MAP[d.id]=i+2;
       }
-      if(!silent) setSyncStatus('ok','✅ Sincronizado — '+BASE_DATA.length+' prospectos');
+    } else {
+      CRM_ROW_MAP = {};
+      for(let i=1;i<rowsCRM.length;i++){
+        const row=rowsCRM[i]; const id=parseInt(row[0]);
+        if(!id||isNaN(id)) continue;
+        CRM_ROW_MAP[id]=i+1; // fila real en la hoja (1-based)
+        CRM[id]={
+          estado:row[1]||'pendiente',contacto:row[2]||'',cargo:row[3]||'',tel:row[4]||'',
+          whatsapp:row[5]||'',email:row[6]||'',email2:row[7]||'',contacto2:row[8]||'',
+          cargo2:row[9]||'',tel2:row[10]||'',telEstado:row[11]||'',canal:row[12]||'',
+          fechaVisita:row[13]||'',horaVisita:row[14]||'',notas:row[15]||'',
+          historial:safeJSON(row[16]),tareas:safeJSON(row[17]),
+          valor:parseFloat(row[19])||0,prob:parseInt(row[20])||0,
+          cierre:row[21]||'',fuente:row[22]||'',opDesc:row[23]||'',
+          servicios:safeJSON(row[24]),prioridad:parseInt(row[25])||2
+        };
+      }
     }
-    updateSyncTime(); renderAll(); if(currentPanel) renderPanel(currentPanel);
+
+    // ── 2. CARGAR HOJA EMPRESAS (custom) ──
+    try{
+      const resEmp = await gasRead('Empresas');
+      const rowsEmp = resEmp.data||[];
+      if(rowsEmp.length < 2){
+        await gasWrite(1, HDR_EMP, 'Empresas');
+      } else {
+        EMP_ROW_MAP = {};
+        for(let i=1;i<rowsEmp.length;i++){
+          const row=rowsEmp[i];
+          const id=parseInt(row[0]);
+          if(!id||isNaN(id)) continue;
+          if(!ORIGINAL_IDS.has(id) && !BASE_DATA_IDS.has(id)){
+            const emp={id,empresa:row[1]||'',alias:row[2]||'',sector:row[3]||'otro',reg:row[4]||'',proyecto:row[5]||'',capacidad:row[6]||'',emailBase:row[7]||'',telBase:row[8]||'',prioridad:parseInt(row[9])||2,ciudad:row[10]||'',depto:row[11]||'',pais:row[12]||'Honduras',coords:row[13]||''};
+            BASE_DATA.push(emp);
+            BASE_DATA_IDS.add(id);
+            if(!CRM[id]) CRM[id]=defaultCRM(id);
+          }
+          EMP_ROW_MAP[id]=i+1;
+        }
+      }
+    }catch(e2){ console.warn('Sin hoja Empresas aún:',e2); }
+
+    // ── 3. CARGAR ACTIVIDADES ──
+    try{
+      const resAct = await gasRead('Actividades');
+      const rowsAct = resAct.data||[];
+      if(rowsAct.length < 2){
+        await gasWrite(1, HDR_ACT, 'Actividades');
+      } else {
+        const actsFromSheets=[];
+        for(let i=1;i<rowsAct.length;i++){
+          const row=rowsAct[i];
+          if(!row[0]) continue;
+          actsFromSheets.push({id:row[0],empresaId:parseInt(row[1]),empresa:row[2]||'',tipo:row[3]||'nota',texto:row[4]||'',fecha:row[5]||'',hora:row[6]||''});
+        }
+        if(actsFromSheets.length>0) actividades=actsFromSheets;
+      }
+    }catch(e3){ console.warn('Sin hoja Actividades aún:',e3); }
+
+    // ── 4. Asegurar que todas las empresas tienen CRM ──
+    BASE_DATA.forEach(d=>{ if(!CRM[d.id]) CRM[d.id]=defaultCRM(d.id); });
+
+    // Guardar en localStorage como caché offline
+    saveLocal();
+
+    setSyncStatus('ok','✅ Sincronizado — '+BASE_DATA.length+' prospectos');
+    updateSyncTime();
+    renderAll();
+    if(currentPanel) renderPanel(currentPanel);
+    populateEmpresaSelects();
+
   } catch(e){
-    setSyncStatus('error','⚠️ Trabajando offline');
-    if(!silent){ BASE_DATA.forEach(d=>{ if(!CRM[d.id]) CRM[d.id]=defaultCRM(d.id); }); renderAll(); }
+    console.warn('Sheets offline:', e);
+    setSyncStatus('error','⚠️ Sin conexión — modo offline');
+    if(!silent){
+      // Cargar desde caché local
+      loadFromLocalCache();
+      renderAll();
+    }
   }
 }
 
-function rowToArr(id,c){ return [id,c.estado,c.contacto,c.cargo,c.tel,c.whatsapp,c.email,c.email2,c.contacto2,c.cargo2,c.tel2,c.telEstado,c.canal,c.fechaVisita,c.horaVisita,c.notas,JSON.stringify(c.historial||[]),JSON.stringify(c.tareas||[]),'',c.valor||0,c.prob||0,c.cierre,c.fuente,c.opDesc,JSON.stringify(c.servicios||[]),c.prioridad||2]; }
+function loadFromLocalCache(){
+  const savedCustom=localStorage.getItem('as360_custom_empresas');
+  if(savedCustom){ try{ const cc=JSON.parse(savedCustom); cc.forEach(d=>{ if(d&&d.id&&!BASE_DATA_IDS.has(d.id)){ BASE_DATA.push(d); BASE_DATA_IDS.add(d.id); } }); }catch{} }
+  const saved=localStorage.getItem('as360_crm');
+  if(saved){ try{ Object.assign(CRM,JSON.parse(saved)); }catch{} }
+  const savedActs=localStorage.getItem('as360_acts');
+  if(savedActs){ try{ actividades=JSON.parse(savedActs); }catch{} }
+  const savedEvts=localStorage.getItem('as360_evts');
+  if(savedEvts){ try{ eventos=JSON.parse(savedEvts); }catch{} }
+  BASE_DATA.forEach(d=>{ if(!CRM[d.id]) CRM[d.id]=defaultCRM(d.id); });
+}
 
 async function saveRow(id){
-  try{ setSyncStatus('pending','Guardando...'); await gasWrite(id+1,rowToArr(id,gc(id))); setSyncStatus('ok','✅ Guardado'); updateSyncTime(); }
-  catch(e){ setSyncStatus('error','⚠️ Error al guardar'); }
+  try{
+    setSyncStatus('pending','Guardando...');
+    const rowIdx = CRM_ROW_MAP[id];
+    if(rowIdx){
+      await gasWrite(rowIdx, rowToArrCRM(id, gc(id)), 'CRM');
+    } else {
+      // Nueva fila: append
+      await gasAppend(rowToArrCRM(id, gc(id)), 'CRM');
+      // Leer de vuelta para obtener el rowIndex real
+      const res=await gasRead('CRM');
+      const rows=res.data||[];
+      for(let i=rows.length-1;i>=1;i--){ if(parseInt(rows[i][0])===id){ CRM_ROW_MAP[id]=i+1; break; } }
+    }
+    setSyncStatus('ok','✅ Guardado'); updateSyncTime();
+    saveLocal();
+  }catch(e){ setSyncStatus('error','⚠️ Error al guardar — datos en caché local'); saveLocal(); }
 }
 function scheduleSave(id){ clearTimeout(saveTimers[id]); saveTimers[id]=setTimeout(()=>saveRow(id),1200); }
 function autoSave(){ if(currentPanel) scheduleSave(currentPanel); }
 async function syncNow(){ await loadFromSheets(false); }
-function safeJSON(s){ try{ return s?JSON.parse(s):[]; }catch{ return []; } }
+
 function setSyncStatus(type,msg){
   const cls=type==='pending'?' pending':type==='error'?' error':'';
   document.getElementById('sdot').className='sync-dot'+cls;
@@ -1046,43 +1180,17 @@ function init(){
   const deptos=[...new Set(BASE_DATA.map(d=>d.depto).filter(Boolean))].sort();
   const sel=document.getElementById('f-depto');
   deptos.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;sel.appendChild(o);});
-  populateEmpresaSelects();
   const today=new Date().toISOString().split('T')[0];
   document.getElementById('qe-fecha').value=today;
   document.getElementById('h-fecha').value=today;
   document.getElementById('t-fecha').value=today;
-
-  // 1. Restaurar empresas personalizadas ANTES de cargar el CRM
-  const savedCustom=localStorage.getItem('as360_custom_empresas');
-  if(savedCustom){
-    try{
-      const customs=JSON.parse(savedCustom);
-      customs.forEach(d=>{
-        if(d && d.id && !BASE_DATA_IDS.has(d.id)){
-          BASE_DATA.push(d);
-          BASE_DATA_IDS.add(d.id);
-        }
-      });
-    }catch(e){ console.warn('Error cargando empresas custom:',e); }
-  }
-
-  // 2. Restaurar datos CRM (estados, contactos, notas, etc.)
-  const saved=localStorage.getItem('as360_crm');
-  if(saved){ try{ Object.assign(CRM,JSON.parse(saved)); }catch(e){ console.warn('Error cargando CRM:',e); } }
-
-  // 3. Restaurar actividades y eventos
-  const savedActs=localStorage.getItem('as360_acts');
-  const savedEvts=localStorage.getItem('as360_evts');
-  if(savedActs){ try{ actividades=JSON.parse(savedActs); }catch{} }
-  if(savedEvts){ try{ eventos=JSON.parse(savedEvts); }catch{} }
-
-  // 4. Asegurar que todos los prospectos (incluyendo customs) tengan CRM inicializado
-  BASE_DATA.forEach(d=>{ if(!CRM[d.id]) CRM[d.id]=defaultCRM(d.id); });
-
-  populateEmpresaSelects(); // Re-poblar con empresas custom incluidas
+  // Mostrar datos del caché local MIENTRAS carga desde Sheets (mejor UX)
+  loadFromLocalCache();
+  populateEmpresaSelects();
   renderAll();
+  // Cargar la verdad desde Google Sheets
   loadFromSheets(false);
-  syncTimer=setInterval(()=>loadFromSheets(true),SYNC_INTERVAL);
+  syncTimer=setInterval(()=>loadFromSheets(true), SYNC_INTERVAL);
 }
 
 function saveLocal(){
@@ -1364,12 +1472,19 @@ function addHistorial(){
   const fecha=document.getElementById('h-fecha').value;
   if(!texto){ showToast('Escribe el detalle de la actividad','error'); return; }
   if(!c.historial) c.historial=[];
-  const entry={tipo,texto,fecha,hora:new Date().toLocaleTimeString('es-HN',{hour:'2-digit',minute:'2-digit'})};
+  const hora=new Date().toLocaleTimeString('es-HN',{hour:'2-digit',minute:'2-digit'});
+  const entry={tipo,texto,fecha,hora};
   c.historial.push(entry);
   const d=BASE_DATA.find(x=>x.id===currentPanel);
-  actividades.push({empresaId:currentPanel,empresa:d?d.alias||d.empresa:'',...entry});
+  const actId='act_'+Date.now();
+  const act={id:actId,empresaId:currentPanel,empresa:d?d.alias||d.empresa:'',...entry};
+  actividades.push(act);
   document.getElementById('h-texto').value='';
-  scheduleSave(currentPanel); saveLocal(); renderHistorial(currentPanel);
+  scheduleSave(currentPanel);
+  saveLocal();
+  // Guardar actividad en hoja Actividades de Sheets
+  gasAppend(rowToArrAct(act),'Actividades').catch(()=>{});
+  renderHistorial(currentPanel);
   showToast(histIcon(tipo)+' Actividad registrada','success');
 }
 
@@ -1398,57 +1513,66 @@ function closeModal(){ document.getElementById('modal-overlay').classList.remove
 async function saveNewProspecto(){
   const emp=document.getElementById('m-empresa').value.trim();
   if(!emp){ showToast('El nombre de la empresa es requerido','error'); return; }
-  // Usar timestamp para ID único que no colisione con los originales (1-134)
+  const btn=document.querySelector('#modal-overlay .btn-primary');
+  if(btn){ btn.disabled=true; btn.textContent='Guardando...'; }
+
+  // ID único basado en timestamp (no colisiona con originales 1-134)
   const newId = Date.now();
   const servicios=[...document.querySelectorAll('#m-servicios .tag.sel')].map(el=>el.dataset.v);
   const newData={
-    id:newId,
-    empresa:emp,
-    alias:document.getElementById('m-alias').value||emp.slice(0,12),
+    id:newId, empresa:emp,
+    alias:document.getElementById('m-alias').value.trim()||emp.slice(0,12),
     sector:document.getElementById('m-sector').value,
     reg:'Manual',
-    proyecto:document.getElementById('m-proyecto').value,
-    capacidad:document.getElementById('m-capacidad').value,
-    emailBase:document.getElementById('m-email').value,
-    telBase:document.getElementById('m-tel').value,
+    proyecto:document.getElementById('m-proyecto').value.trim(),
+    capacidad:document.getElementById('m-capacidad').value.trim(),
+    emailBase:document.getElementById('m-email').value.trim(),
+    telBase:document.getElementById('m-tel').value.trim(),
     prioridad:parseInt(document.getElementById('m-prioridad').value)||2,
-    ciudad:document.getElementById('m-ciudad').value,
-    depto:document.getElementById('m-depto').value,
+    ciudad:document.getElementById('m-ciudad').value.trim(),
+    depto:document.getElementById('m-depto').value.trim(),
     pais:document.getElementById('m-pais').value||'Honduras',
-    direccion:'',
     coords:''
   };
-  BASE_DATA.push(newData);
-  BASE_DATA_IDS.add(newId);
-  CRM[newId]={
+  const newCRM={
     ...defaultCRM(newId),
     estado:document.getElementById('m-estado').value||'pendiente',
-    contacto:document.getElementById('m-contacto').value,
-    tel:newData.telBase,
-    email:newData.emailBase,
-    notas:document.getElementById('m-notas').value,
-    servicios,
-    prioridad:newData.prioridad
+    contacto:document.getElementById('m-contacto').value.trim(),
+    tel:newData.telBase, email:newData.emailBase,
+    notas:document.getElementById('m-notas').value.trim(),
+    servicios, prioridad:newData.prioridad
   };
-  // Guardar localmente primero (siempre funciona)
-  saveLocal();
-  // Intentar sync a Google Sheets
+
+  // Agregar al estado local PRIMERO
+  BASE_DATA.push(newData);
+  BASE_DATA_IDS.add(newId);
+  CRM[newId]=newCRM;
+
   try{
-    setSyncStatus('pending','Guardando...');
-    const rowIdx = BASE_DATA.length + 1; // Al final de la hoja
-    await gasWrite(rowIdx, rowToArr(newId, CRM[newId]));
+    setSyncStatus('pending','Guardando en Google Sheets...');
+    // 1. Guardar datos de la empresa en hoja "Empresas"
+    await gasAppend(rowToArrEmp(newData), 'Empresas');
+    // 2. Guardar datos CRM en hoja "CRM"
+    await gasAppend(rowToArrCRM(newId, newCRM), 'CRM');
     setSyncStatus('ok','✅ Guardado en Google Sheets');
+    updateSyncTime();
   }catch(e){
-    setSyncStatus('error','⚠️ Guardado local (sin red)');
+    setSyncStatus('error','⚠️ Sin conexión — guardado en caché local');
   }
+
+  // Guardar en caché local también (para offline)
+  saveLocal();
   renderAll();
   populateEmpresaSelects();
   closeModal();
+
+  // Limpiar formulario
   document.querySelectorAll('#m-servicios .tag').forEach(el=>el.classList.remove('sel'));
-  ['m-empresa','m-alias','m-proyecto','m-capacidad','m-ciudad','m-depto','m-contacto','m-tel','m-email','m-notas'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  ['m-empresa','m-alias','m-proyecto','m-capacidad','m-ciudad','m-depto','m-contacto','m-tel','m-email','m-notas'].forEach(fid=>{ const el=document.getElementById(fid); if(el) el.value=''; });
   document.getElementById('m-pais').value='Honduras';
-  showToast('🏢 Prospecto agregado: '+(newData.alias||emp),'success');
-  // Abrir el panel del nuevo prospecto automáticamente
+  if(btn){ btn.disabled=false; btn.textContent='💾 Guardar Prospecto'; }
+
+  showToast('🏢 Prospecto creado: '+(newData.alias||emp),'success');
   openPanel(newId);
 }
 
@@ -1598,11 +1722,20 @@ async function eliminarProspecto(){
   delete CRM[id];
   actividades=actividades.filter(a=>a.empresaId!=id);
   eventos=eventos.filter(e=>e.empresaId!=id);
-  // Solo intentar borrar de Sheets si es empresa original (tiene fila fija)
-  if(!wasCustom){
-    try{ setSyncStatus('pending','Eliminando...'); await gasWrite(id+1,Array(26).fill('')); setSyncStatus('ok','✅ Eliminado'); }
-    catch(e){ setSyncStatus('error','⚠️ Sin conexión a Sheets'); }
-  }
+  try{
+    setSyncStatus('pending','Eliminando...');
+    // Borrar fila en hoja CRM (limpiar la fila, no borrar — para no romper índices)
+    if(CRM_ROW_MAP[id]){
+      await gasWrite(CRM_ROW_MAP[id], Array(HDR_CRM.length).fill(''), 'CRM');
+      delete CRM_ROW_MAP[id];
+    }
+    // Si era empresa custom, borrar también de hoja Empresas
+    if(wasCustom && EMP_ROW_MAP[id]){
+      await gasWrite(EMP_ROW_MAP[id], Array(HDR_EMP.length).fill(''), 'Empresas');
+      delete EMP_ROW_MAP[id];
+    }
+    setSyncStatus('ok','✅ Eliminado');
+  }catch(e){ setSyncStatus('error','⚠️ Eliminado localmente'); }
   document.getElementById('modal-eliminar').classList.remove('open');
   closePanel(); saveLocal(); populateEmpresaSelects(); renderAll();
   showToast('🗑 Prospecto eliminado','success');
