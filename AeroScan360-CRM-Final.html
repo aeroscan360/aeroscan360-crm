@@ -971,6 +971,8 @@ const BASE_DATA = [
 
 const BASE_DATA_IDS = new Set(BASE_DATA.map(d=>d.id));
 const ORIGINAL_IDS = new Set(BASE_DATA.map(d=>d.id)); // IDs originales, nunca cambia
+// Copia inmutable de las empresas originales del HTML (para reconstruir desde Sheets)
+const BASE_DATA_ORIGINAL = BASE_DATA.map(d=>({...d}));
 
 // ================================================================
 // STATE
@@ -1034,74 +1036,89 @@ async function loadFromSheets(silent=false){
   try{
     setSyncStatus('pending', silent?'Actualizando...':'Cargando desde Sheets...');
 
-    // ── 0. CARGAR IDs ELIMINADOS ──
+    // ══ PASO 0: Leer lista de eliminados desde Sheets ══
+    // Esta es la fuente de verdad compartida para TODOS los usuarios
     let DELETED_IDS = new Set();
     try{
       const resEl = await gasRead('Eliminados');
-      const rowsEl = resEl.data||[];
-      for(let i=1;i<rowsEl.length;i++){
-        const rid = parseInt(rowsEl[i][0]);
-        if(rid) DELETED_IDS.add(rid);
-      }
-    }catch(e0){ /* no existe aún, ok */ }
+      (resEl.data||[]).slice(1).forEach(row=>{
+        const rid = parseInt(row[0]);
+        if(rid && !isNaN(rid)) DELETED_IDS.add(rid);
+      });
+    }catch(e0){}
+    // Sincronizar al localStorage local para modo offline
+    localStorage.setItem('as360_deleted', JSON.stringify([...DELETED_IDS]));
 
-    // ── 1. CARGAR HOJA CRM ──
-    const resCRM = await gasRead('CRM');
-    const rowsCRM = resCRM.data||[];
-    if(rowsCRM.length < 2){
-      // Hoja vacía → inicializar headers y todas las empresas base
-      await gasWrite(1, HDR_CRM, 'CRM');
-      CRM_ROW_MAP = {};
-      for(let i=0;i<BASE_DATA.length;i++){
-        const d=BASE_DATA[i];
-        if(!CRM[d.id]) CRM[d.id]=defaultCRM(d.id);
-        await gasWrite(i+2, rowToArrCRM(d.id, CRM[d.id]), 'CRM');
-        CRM_ROW_MAP[d.id]=i+2;
-      }
-    } else {
-      CRM_ROW_MAP = {};
-      for(let i=1;i<rowsCRM.length;i++){
-        const row=rowsCRM[i]; const id=parseInt(row[0]);
-        if(!id||isNaN(id)) continue;
-        if(DELETED_IDS.has(id)) continue; // empresa eliminada
-        CRM_ROW_MAP[id]=i+1; // fila real en la hoja (1-based)
-        CRM[id]={
-          estado:row[1]||'pendiente',contacto:row[2]||'',cargo:row[3]||'',tel:row[4]||'',
-          whatsapp:row[5]||'',email:row[6]||'',email2:row[7]||'',contacto2:row[8]||'',
-          cargo2:row[9]||'',tel2:row[10]||'',telEstado:row[11]||'',canal:row[12]||'',
-          fechaVisita:row[13]||'',horaVisita:row[14]||'',notas:row[15]||'',
-          historial:safeJSON(row[16]),tareas:safeJSON(row[17]),
-          valor:parseFloat(row[19])||0,prob:parseInt(row[20])||0,
-          cierre:row[21]||'',fuente:row[22]||'',opDesc:row[23]||'',
-          servicios:safeJSON(row[24]),prioridad:parseInt(row[25])||2
-        };
-      }
-    }
+    // ══ PASO 1: Reconstruir BASE_DATA desde cero usando Sheets como fuente ══
+    // Primero: mantener las empresas originales del HTML que NO fueron eliminadas
+    const newBASE = BASE_DATA_ORIGINAL.filter(d => !DELETED_IDS.has(d.id));
+    const newIDs = new Set(newBASE.map(d=>d.id));
 
-    // ── 2. CARGAR HOJA EMPRESAS (custom) ──
+    // ══ PASO 2: Cargar empresas custom desde hoja Empresas ══
+    EMP_ROW_MAP = {};
     try{
       const resEmp = await gasRead('Empresas');
       const rowsEmp = resEmp.data||[];
       if(rowsEmp.length < 2){
         await gasWrite(1, HDR_EMP, 'Empresas');
       } else {
-        EMP_ROW_MAP = {};
         for(let i=1;i<rowsEmp.length;i++){
           const row=rowsEmp[i];
           const id=parseInt(row[0]);
-          if(!id||isNaN(id)) continue;
-          if(!ORIGINAL_IDS.has(id) && !BASE_DATA_IDS.has(id)){
-            const emp={id,empresa:row[1]||'',alias:row[2]||'',sector:row[3]||'otro',reg:row[4]||'',proyecto:row[5]||'',capacidad:row[6]||'',emailBase:row[7]||'',telBase:row[8]||'',prioridad:parseInt(row[9])||2,ciudad:row[10]||'',depto:row[11]||'',pais:row[12]||'Honduras',coords:row[13]||''};
-            BASE_DATA.push(emp);
-            BASE_DATA_IDS.add(id);
-            if(!CRM[id]) CRM[id]=defaultCRM(id);
-          }
+          if(!id||isNaN(id)||!row[1]) continue; // fila vacía
+          if(DELETED_IDS.has(id)) continue;      // fue eliminada
           EMP_ROW_MAP[id]=i+1;
+          if(!newIDs.has(id)){
+            // Es empresa custom nueva para este usuario
+            newBASE.push({
+              id, empresa:row[1]||'', alias:row[2]||'', sector:row[3]||'otro',
+              reg:row[4]||'', proyecto:row[5]||'', capacidad:row[6]||'',
+              emailBase:row[7]||'', telBase:row[8]||'', prioridad:parseInt(row[9])||2,
+              ciudad:row[10]||'', depto:row[11]||'', pais:row[12]||'Honduras', coords:row[13]||''
+            });
+            newIDs.add(id);
+          }
         }
       }
-    }catch(e2){ console.warn('Sin hoja Empresas aún:',e2); }
+    }catch(e2){ console.warn('Sin hoja Empresas:', e2); }
 
-    // ── 3. CARGAR ACTIVIDADES ──
+    // ══ PASO 3: Cargar CRM desde hoja CRM ══
+    const newCRM = {};
+    CRM_ROW_MAP = {};
+    const resCRM = await gasRead('CRM');
+    const rowsCRM = resCRM.data||[];
+    if(rowsCRM.length < 2){
+      // Primera vez: inicializar Sheets con todas las empresas
+      await gasWrite(1, HDR_CRM, 'CRM');
+      for(let i=0;i<newBASE.length;i++){
+        const d=newBASE[i];
+        newCRM[d.id]=defaultCRM(d.id);
+        await gasWrite(i+2, rowToArrCRM(d.id, newCRM[d.id]), 'CRM');
+        CRM_ROW_MAP[d.id]=i+2;
+      }
+    } else {
+      for(let i=1;i<rowsCRM.length;i++){
+        const row=rowsCRM[i];
+        const id=parseInt(row[0]);
+        if(!id||isNaN(id)||!row[0]) continue;
+        if(DELETED_IDS.has(id)) continue;
+        CRM_ROW_MAP[id]=i+1;
+        newCRM[id]={
+          estado:row[1]||'pendiente', contacto:row[2]||'', cargo:row[3]||'', tel:row[4]||'',
+          whatsapp:row[5]||'', email:row[6]||'', email2:row[7]||'', contacto2:row[8]||'',
+          cargo2:row[9]||'', tel2:row[10]||'', telEstado:row[11]||'', canal:row[12]||'',
+          fechaVisita:row[13]||'', horaVisita:row[14]||'', notas:row[15]||'',
+          historial:safeJSON(row[16]), tareas:safeJSON(row[17]),
+          valor:parseFloat(row[19])||0, prob:parseInt(row[20])||0,
+          cierre:row[21]||'', fuente:row[22]||'', opDesc:row[23]||'',
+          servicios:safeJSON(row[24]), prioridad:parseInt(row[25])||2
+        };
+      }
+      // Asegurar que toda empresa en newBASE tiene CRM
+      newBASE.forEach(d=>{ if(!newCRM[d.id]) newCRM[d.id]=defaultCRM(d.id); });
+    }
+
+    // ══ PASO 4: Cargar Actividades ══
     try{
       const resAct = await gasRead('Actividades');
       const rowsAct = resAct.data||[];
@@ -1111,50 +1128,72 @@ async function loadFromSheets(silent=false){
         const actsFromSheets=[];
         for(let i=1;i<rowsAct.length;i++){
           const row=rowsAct[i];
-          if(!row[0]) continue;
+          if(!row[0]||DELETED_IDS.has(parseInt(row[1]))) continue;
           actsFromSheets.push({id:row[0],empresaId:parseInt(row[1]),empresa:row[2]||'',tipo:row[3]||'nota',texto:row[4]||'',fecha:row[5]||'',hora:row[6]||''});
         }
         if(actsFromSheets.length>0) actividades=actsFromSheets;
       }
-    }catch(e3){ console.warn('Sin hoja Actividades aún:',e3); }
+    }catch(e3){ console.warn('Sin hoja Actividades:', e3); }
 
-    // ── 4. Aplicar eliminados: quitar de BASE_DATA los que fueron borrados ──
-    DELETED_IDS.forEach(delId=>{
-      const idx=BASE_DATA.findIndex(x=>x.id===delId);
-      if(idx!==-1){ BASE_DATA.splice(idx,1); BASE_DATA_IDS.delete(delId); delete CRM[delId]; }
-    });
-    // Asegurar que todas las empresas activas tienen CRM
-    BASE_DATA.forEach(d=>{ if(!CRM[d.id]) CRM[d.id]=defaultCRM(d.id); });
+    // ══ PASO 5: Aplicar estado nuevo — reemplazar por completo ══
+    BASE_DATA.length = 0;
+    newBASE.forEach(d=>BASE_DATA.push(d));
+    BASE_DATA_IDS.clear();
+    BASE_DATA.forEach(d=>BASE_DATA_IDS.add(d.id));
+    Object.keys(CRM).forEach(k=>delete CRM[k]);
+    Object.assign(CRM, newCRM);
 
-    // Guardar en localStorage como caché offline
     saveLocal();
-
     setSyncStatus('ok','✅ Sincronizado — '+BASE_DATA.length+' prospectos');
     updateSyncTime();
     renderAll();
-    if(currentPanel) renderPanel(currentPanel);
+    if(currentPanel && !DELETED_IDS.has(currentPanel)) renderPanel(currentPanel);
+    else if(currentPanel && DELETED_IDS.has(currentPanel)) closePanel();
     populateEmpresaSelects();
 
   } catch(e){
     console.warn('Sheets offline:', e);
     setSyncStatus('error','⚠️ Sin conexión — modo offline');
-    if(!silent){
-      // Cargar desde caché local
-      loadFromLocalCache();
-      renderAll();
-    }
+    if(!silent){ loadFromLocalCache(); renderAll(); }
   }
 }
 
 function loadFromLocalCache(){
+  // Leer eliminados del caché local
+  const localDeleted = new Set(JSON.parse(localStorage.getItem('as360_deleted')||'[]').map(Number));
+
+  // Reconstruir BASE_DATA desde originales, respetando eliminados
+  BASE_DATA.length = 0;
+  BASE_DATA_IDS.clear();
+  BASE_DATA_ORIGINAL.filter(d=>!localDeleted.has(d.id)).forEach(d=>{
+    BASE_DATA.push({...d});
+    BASE_DATA_IDS.add(d.id);
+  });
+
+  // Agregar empresas custom del caché local (si no fueron eliminadas)
   const savedCustom=localStorage.getItem('as360_custom_empresas');
-  if(savedCustom){ try{ const cc=JSON.parse(savedCustom); cc.forEach(d=>{ if(d&&d.id&&!BASE_DATA_IDS.has(d.id)){ BASE_DATA.push(d); BASE_DATA_IDS.add(d.id); } }); }catch{} }
+  if(savedCustom){ try{ JSON.parse(savedCustom).forEach(d=>{
+    if(d&&d.id&&!localDeleted.has(d.id)&&!BASE_DATA_IDS.has(d.id)){
+      BASE_DATA.push(d); BASE_DATA_IDS.add(d.id);
+    }
+  }); }catch{} }
+
+  // Cargar CRM, filtrando eliminados
   const saved=localStorage.getItem('as360_crm');
-  if(saved){ try{ Object.assign(CRM,JSON.parse(saved)); }catch{} }
+  Object.keys(CRM).forEach(k=>delete CRM[k]);
+  if(saved){ try{
+    const parsed=JSON.parse(saved);
+    Object.keys(parsed).forEach(k=>{
+      const id=parseInt(k);
+      if(!localDeleted.has(id)) CRM[id]=parsed[k];
+    });
+  }catch{} }
+
   const savedActs=localStorage.getItem('as360_acts');
-  if(savedActs){ try{ actividades=JSON.parse(savedActs); }catch{} }
+  if(savedActs){ try{ actividades=JSON.parse(savedActs).filter(a=>!localDeleted.has(parseInt(a.empresaId))); }catch{} }
   const savedEvts=localStorage.getItem('as360_evts');
-  if(savedEvts){ try{ eventos=JSON.parse(savedEvts); }catch{} }
+  if(savedEvts){ try{ eventos=JSON.parse(savedEvts).filter(e=>!localDeleted.has(parseInt(e.empresaId))); }catch{} }
+
   BASE_DATA.forEach(d=>{ if(!CRM[d.id]) CRM[d.id]=defaultCRM(d.id); });
 }
 
@@ -1213,9 +1252,12 @@ function saveLocal(){
   localStorage.setItem('as360_crm',JSON.stringify(CRM));
   localStorage.setItem('as360_acts',JSON.stringify(actividades));
   localStorage.setItem('as360_evts',JSON.stringify(eventos));
-  // Custom empresas = las que NO estaban en BASE_DATA_IDS original (IDs >= 1000 o no en el set inicial)
   const customEmpresas=BASE_DATA.filter(d=>!ORIGINAL_IDS.has(d.id));
   localStorage.setItem('as360_custom_empresas',JSON.stringify(customEmpresas));
+  // Guardar lista de eliminados en caché local (para modo offline)
+  const savedDeleted=localStorage.getItem('as360_deleted');
+  const localDeleted = savedDeleted ? JSON.parse(savedDeleted) : [];
+  localStorage.setItem('as360_deleted', JSON.stringify(localDeleted));
 }
 
 function populateEmpresaSelects(){
@@ -1742,6 +1784,10 @@ async function eliminarProspecto(){
     setSyncStatus('pending','Eliminando...');
     // 1. Registrar en hoja Eliminados (fuente de verdad para todos los usuarios)
     await gasAppend([id, new Date().toISOString()], 'Eliminados');
+    // También guardar en localStorage local para modo offline
+    const sd=localStorage.getItem('as360_deleted');
+    const ld=sd?JSON.parse(sd):[];
+    if(!ld.includes(id)){ ld.push(id); localStorage.setItem('as360_deleted',JSON.stringify(ld)); }
     // 2. Limpiar fila en hoja CRM
     if(CRM_ROW_MAP[id]){
       await gasWrite(CRM_ROW_MAP[id], Array(HDR_CRM.length).fill(''), 'CRM');
