@@ -525,16 +525,44 @@ textarea.fi{resize:vertical;min-height:70px;}
   <div class="pbody">
     <!-- INFO -->
     <div id="tab-info" class="ptc active">
-      <div class="irow"><span class="ik">Sector</span><span class="iv" id="p-sector">—</span></div>
-      <div class="irow"><span class="ik">País</span><span class="iv" id="p-pais">—</span></div>
-      <div class="irow"><span class="ik">Capacidad</span><span class="iv" id="p-capacidad">—</span></div>
-      <div class="irow"><span class="ik">Proyecto</span><span class="iv" id="p-proyecto">—</span></div>
-      <div class="irow"><span class="ik">Registro</span><span class="iv" id="p-registro">—</span></div>
-      <div class="irow"><span class="ik">Ciudad</span><span class="iv" id="p-ciudad">—</span></div>
-      <div class="irow"><span class="ik">Departamento</span><span class="iv" id="p-depto">—</span></div>
-      <div class="irow"><span class="ik">Dirección</span><span class="iv" id="p-dir">—</span></div>
-      <div class="irow"><span class="ik">Coordenadas</span>
-        <span class="iv"><span id="p-coords">—</span> <a id="p-maplink" href="#" target="_blank" style="font-size:10px;color:var(--accent);">📍 Ver mapa</a></span>
+      <div class="frow">
+        <div class="fg"><div class="fl">Sector</div>
+          <select class="psel" id="p-sector-sel" onchange="autoSave()">
+            <option value="solar">☀️ Solar</option>
+            <option value="eolico">💨 Eólico</option>
+            <option value="hidro">💧 Hidroeléctrico</option>
+            <option value="termico">🔥 Térmico/Biomasa</option>
+            <option value="geo">🌋 Geotérmico</option>
+            <option value="multi">⚡ Multi-tecnología</option>
+            <option value="redes">🔌 Redes/Distribución</option>
+            <option value="otro">🏭 Otro</option>
+          </select>
+        </div>
+        <div class="fg"><div class="fl">País</div>
+          <select class="psel" id="p-pais-sel" onchange="autoSave()">
+            <option value="Honduras">🇭🇳 Honduras</option>
+            <option value="Guatemala">🇬🇹 Guatemala</option>
+            <option value="El Salvador">🇸🇻 El Salvador</option>
+            <option value="Nicaragua">🇳🇮 Nicaragua</option>
+            <option value="Costa Rica">🇨🇷 Costa Rica</option>
+            <option value="Internacional">🌍 Internacional</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg"><div class="fl">Ciudad</div><input class="fi" id="p-ciudad-inp" oninput="autoSave()" placeholder="Ciudad"></div>
+        <div class="fg"><div class="fl">Departamento</div><input class="fi" id="p-depto-inp" oninput="autoSave()" placeholder="Departamento/Estado"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><div class="fl">Capacidad (MW)</div><input class="fi" id="p-capacidad-inp" oninput="autoSave()" placeholder="Ej: 50 MW"></div>
+        <div class="fg"><div class="fl">Proyecto</div><input class="fi" id="p-proyecto-inp" oninput="autoSave()" placeholder="Nombre del proyecto"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><div class="fl">Registro/Código</div><input class="fi" id="p-registro-inp" oninput="autoSave()" placeholder="Ej: G-S01"></div>
+        <div class="fg"><div class="fl">Dirección</div><input class="fi" id="p-dir-inp" oninput="autoSave()" placeholder="Dirección física"></div>
+      </div>
+      <div class="fg"><div class="fl">Coordenadas <a id="p-maplink" href="#" target="_blank" style="font-size:10px;color:var(--accent);margin-left:6px;">📍 Ver mapa</a></div>
+        <input class="fi" id="p-coords-inp" oninput="autoSave()" placeholder="14.0723,-87.1921">
       </div>
       <div class="div"></div>
       <div class="fg"><div class="fl">Servicios AeroScan de Interés</div>
@@ -1216,7 +1244,37 @@ async function saveRow(id){
   }catch(e){ setSyncStatus('error','⚠️ Error al guardar — datos en caché local'); saveLocal(); }
 }
 function scheduleSave(id){ clearTimeout(saveTimers[id]); saveTimers[id]=setTimeout(()=>saveRow(id),1200); }
-function autoSave(){ if(currentPanel) scheduleSave(currentPanel); }
+function autoSave(){
+  if(!currentPanel) return;
+  // Actualizar campos de empresa en BASE_DATA en tiempo real
+  const d=BASE_DATA.find(x=>x.id===currentPanel);
+  if(d){
+    const ss=document.getElementById('p-sector-sel');
+    const ps=document.getElementById('p-pais-sel');
+    const coords=document.getElementById('p-coords-inp');
+    if(ss) d.sector=ss.value;
+    if(ps) d.pais=ps.value;
+    const cap=document.getElementById('p-capacidad-inp');
+    const proy=document.getElementById('p-proyecto-inp');
+    const reg=document.getElementById('p-registro-inp');
+    const ciu=document.getElementById('p-ciudad-inp');
+    const dep=document.getElementById('p-depto-inp');
+    const dir=document.getElementById('p-dir-inp');
+    if(cap) d.capacidad=cap.value;
+    if(proy) d.proyecto=proy.value;
+    if(reg) d.reg=reg.value;
+    if(ciu) d.ciudad=ciu.value;
+    if(dep) d.depto=dep.value;
+    if(dir) d.direccion=dir.value;
+    if(coords){
+      d.coords=coords.value;
+      const mapUrl=coords.value?`https://www.google.com/maps?q=${coords.value}`:`https://www.google.com/maps/search/${encodeURIComponent((d.ciudad||'')+' '+(d.pais||''))}`;
+      const ml=document.getElementById('p-maplink');
+      if(ml) ml.href=mapUrl;
+    }
+  }
+  scheduleSave(currentPanel);
+}
 async function syncNow(){ await loadFromSheets(false); }
 
 function setSyncStatus(type,msg){
@@ -1436,16 +1494,17 @@ function renderPanel(id){
   eSel.className=`vs vs-${c.estado||'pendiente'}`;
   const pri=c.prioridad||d.prioridad||2;
   [1,2,3].forEach(i=>{ const b=document.getElementById('prio-'+i); b.style.background=pri>=i?'var(--yellow-light)':''; b.style.borderColor=pri>=i?'var(--yellow-border)':'var(--border)'; });
-  document.getElementById('p-sector').innerHTML=`<span class="sb ${SECTOR_CSS[d.sector]||'sb-otro'}">${SECTOR_MAP[d.sector]||d.sector}</span>`;
-  document.getElementById('p-pais').innerHTML=`<span class="flag-tag ${PAIS_CSS[d.pais]||''}">${PAIS_FLAG[d.pais]||'🌎'} ${d.pais}</span>`;
-  document.getElementById('p-capacidad').textContent=d.capacidad||'—';
-  document.getElementById('p-proyecto').textContent=d.proyecto||'—';
-  document.getElementById('p-registro').textContent=d.reg||'Sin registro oficial';
-  document.getElementById('p-ciudad').textContent=d.ciudad||'—';
-  document.getElementById('p-depto').textContent=d.depto||'—';
-  document.getElementById('p-dir').textContent=d.direccion||'—';
+  // Campos editables de Info
+  document.getElementById('p-sector-sel').value=d.sector||'otro';
+  document.getElementById('p-pais-sel').value=d.pais||'Honduras';
+  document.getElementById('p-capacidad-inp').value=d.capacidad||'';
+  document.getElementById('p-proyecto-inp').value=d.proyecto||'';
+  document.getElementById('p-registro-inp').value=d.reg||'';
+  document.getElementById('p-ciudad-inp').value=d.ciudad||'';
+  document.getElementById('p-depto-inp').value=d.depto||'';
+  document.getElementById('p-dir-inp').value=d.direccion||d.dir||'';
   const coords=d.coords||'';
-  document.getElementById('p-coords').textContent=coords||'—';
+  document.getElementById('p-coords-inp').value=coords||'';
   const mapUrl=coords?`https://www.google.com/maps?q=${coords}`:`https://www.google.com/maps/search/${encodeURIComponent((d.ciudad||'')+' '+(d.depto||'')+' '+(d.pais||''))}`;
   document.getElementById('p-maplink').href=mapUrl;
   document.querySelectorAll('#p-servicios-tags .tag').forEach(el=>{ el.classList.toggle('sel',(c.servicios||[]).includes(el.dataset.v)); });
@@ -1480,6 +1539,7 @@ function updateProbBar(){ const p=parseInt(document.getElementById('p-prob').val
 function savePanel(){
   if(!currentPanel) return;
   const c=gc(currentPanel);
+  // Guardar campos CRM
   c.contacto=document.getElementById('p-contacto').value;
   c.cargo=document.getElementById('p-cargo').value;
   c.tel=document.getElementById('p-tel').value;
@@ -1499,6 +1559,23 @@ function savePanel(){
   c.cierre=document.getElementById('p-cierre').value;
   c.fuente=document.getElementById('p-fuente').value;
   c.opDesc=document.getElementById('p-op-desc').value;
+  // Guardar campos de empresa (BASE_DATA) — editables para todos
+  const d=BASE_DATA.find(x=>x.id===currentPanel);
+  if(d){
+    d.sector=document.getElementById('p-sector-sel').value;
+    d.pais=document.getElementById('p-pais-sel').value;
+    d.capacidad=document.getElementById('p-capacidad-inp').value;
+    d.proyecto=document.getElementById('p-proyecto-inp').value;
+    d.reg=document.getElementById('p-registro-inp').value;
+    d.ciudad=document.getElementById('p-ciudad-inp').value;
+    d.depto=document.getElementById('p-depto-inp').value;
+    d.direccion=document.getElementById('p-dir-inp').value;
+    d.coords=document.getElementById('p-coords-inp').value;
+    // Guardar empresa en hoja Empresas si es custom, si no solo actualizar CRM
+    if(!ORIGINAL_IDS.has(d.id)){
+      gasAppend(rowToArrEmp(d),'Empresas').catch(()=>{});
+    }
+  }
   scheduleSave(currentPanel); saveLocal(); renderTable(); showToast('💾 Guardado','success');
 }
 
